@@ -26,6 +26,11 @@ class QuestionContext:
     # counterfactual machinery (sensitivity analysis) that runs the pipeline
     # many times and only needs the numbers.
     narratives: bool = True
+    # Analog corpus override. None => the quant agent matches against the
+    # built-in REFERENCE_EVENTS. The real-market backtest passes [] because
+    # that fixture hard-codes real-world outcomes — matching a 2024 market
+    # against a fixture that KNOWS the 2024 outcome is hindsight.
+    analog_corpus: list | None = None
 
 
 @dataclass

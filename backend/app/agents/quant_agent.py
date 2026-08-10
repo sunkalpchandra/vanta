@@ -10,7 +10,8 @@ class QuantAgent(Agent):
     name = "quant"
 
     def run(self, ctx: QuestionContext, prior_outputs: list[AgentOutput]) -> AgentOutput:
-        report = find_analogs(ctx.question, ctx.category, REFERENCE_EVENTS)
+        corpus = REFERENCE_EVENTS if ctx.analog_corpus is None else ctx.analog_corpus
+        report = find_analogs(ctx.question, ctx.category, corpus)
         if report.hit_rate is None:
             return AgentOutput(
                 agent=self.name,
