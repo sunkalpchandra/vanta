@@ -58,6 +58,8 @@ class QuestionOut(BaseModel):
     market_probability: float
     market_volume_usd: float
     market_liquidity: str
+    resolved: bool = False
+    outcome: int | None = None
     created_at: UTCDateTime
 
 
@@ -102,6 +104,10 @@ class BriefItem(BaseModel):
     vanta_probability: float
     edge: float
     one_liner: str
+
+
+class ResolveRequest(BaseModel):
+    outcome: bool
 
 
 class AskRequest(BaseModel):
