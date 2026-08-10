@@ -134,3 +134,36 @@ a way to stake real money on anything.
 accounts excluded). It surfaces on the Portfolio page. In the static demo it
 reflects whoever traded in the bake database — usually empty, honestly
 labeled.
+
+
+## Agent-traders — vanta trades its own edge
+
+Three autonomous bots (`app/agent_traders.py`) put play money on the
+forecasting pipeline's opinions, so the market has liquidity and vanta's edge
+is finally measured in P&L, not just Brier score:
+
+- **vanta-edge** — buys the side the pipeline's forecast favors when it
+  disagrees with the venue price by ≥ 8 points.
+- **vanta-confidence** — trades the pipeline's direction only when its
+  confidence is ≥ 7/10, sizing up with confidence.
+- **vanta-contrarian** — fades the crowd: buys a side the market prices low
+  when the pipeline agrees it's underpriced by ≥ 10 points.
+
+Each is backed by a bot `User` and trades through the exact same
+`execute_trade` engine as humans (same rounding, same limits, same
+settlement). Runs are deterministic given the database — no randomness, no
+wall-clock dependence. `make agents` runs one pass; `--loop N` daemonizes it.
+
+Because vanta's measured edge over deep venues is near zero (see the
+backtest), the edge and contrarian bots rarely fire — an honest reflection of
+the data, not a bug. The confidence bot trades actively and anchors the
+leaderboard.
+
+## Price history & the activity tape
+
+The sync engine records a price tick per active market per hour
+(`app/pricehistory.py`); `scripts/backfill_ticks.py` seeds real multi-day
+series from Polymarket's CLOB history so the market detail charts
+(`/markets/{id}`) are meaningful from day one. `GET /api/activity/trades`
+exposes a public tape of recent trades across all traders (names redacted to
+the email local-part), surfaced on the markets page.
