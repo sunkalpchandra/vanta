@@ -32,10 +32,17 @@ backend/.venv/bin/python -m pytest backend/tests/ -q
 ```
 
 Or from `backend/`: `.venv/bin/python -m pytest tests/ -q`. The suite covers
-the quant math (`test_bayes.py`, `test_quant.py`), the full pipeline
-(`test_pipeline.py`), the API (`test_api.py`), and known regressions
-(`test_agents_zero_probability.py`). Everything runs offline; nothing may
-depend on `ANTHROPIC_API_KEY` being set.
+the quant math (`test_bayes.py`, `test_quant.py`, `test_scoring.py`), the full
+pipeline (`test_pipeline.py`), the API surface (`test_api.py`,
+`test_resolution.py`, `test_stats_api.py`, `test_discovery.py`), the snapshot
+exporter, and known regressions (`test_agents_zero_probability.py`).
+Everything runs offline; nothing may depend on `ANTHROPIC_API_KEY` being set.
+The suite database binds once in `tests/conftest.py` — later modules must
+tolerate earlier modules' writes.
+
+Shortcuts: `make test`, `make lint`, and `backend/scripts/smoke.sh` (curls
+every endpoint against a running backend). `make static` reproduces the
+GitHub Pages build locally.
 
 ## Commit style
 
