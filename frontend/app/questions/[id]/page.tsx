@@ -6,10 +6,17 @@ import { DebatePanel } from "@/components/DebatePanel";
 import { EvidenceList } from "@/components/EvidenceList";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { StatTile } from "@/components/StatTile";
-import { API_URL, getHistory, getQuestion } from "@/lib/api";
+import { shareCardHref } from "@/lib/api";
+import { IS_STATIC } from "@/lib/config";
+import { getHistory, getQuestion, getQuestions } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  // Static demo: prerender every snapshot question. Live mode: render on demand.
+  if (!IS_STATIC) return [];
+  const questions = await getQuestions();
+  return questions.map((q) => ({ id: String(q.id) }));
+}
 
 export default async function QuestionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,11 +28,20 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
   return (
     <div>
       <div className="mb-6">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CategoryBadge category={detail.category} />
+          {detail.resolved && (
+            <span
+              className={`num rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+                detail.outcome ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg"
+              }`}
+            >
+              resolved {detail.outcome ? "yes" : "no"}
+            </span>
+          )}
           <span className="micro-label">{detail.horizon_days}d horizon</span>
           <span className="micro-label">
-            · ${Math.round(detail.market_volume_usd).toLocaleString()} market volume ·{" "}
+            · ${Math.round(detail.market_volume_usd).toLocaleString("en-US")} market volume ·{" "}
             {detail.market_liquidity} liquidity
           </span>
         </div>
@@ -66,7 +82,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
                 </ul>
               </div>
               <a
-                href={`${API_URL}/api/cards/${detail.id}.svg`}
+                href={shareCardHref(detail.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-lg border border-line px-4 py-2 text-center text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink"
