@@ -252,3 +252,32 @@ Three layers, each pinned to what it alone can catch:
 
 The e2e server (`e2e/serve.sh`) symlinks `out/` under a `/vanta` prefix so
 basePath-relative links resolve exactly as they do in production.
+
+## Real-market subsystem (v0.3)
+
+`app/ingest/` pulls resolved binary markets from Polymarket (Gamma, keyset
+paging past the offset cap) and Kalshi (public cursor API, aggressive junk
+filtering) into `market_events` — deliberately separate from `questions` so a
+100k-row corpus can't affect product hot paths. A budgeted, checkpointed
+price pass fills `price_7d`/`price_30d` from venue price history via
+`price_at`, which never reads points after the cutoff (leakage-tested).
+
+`app/backtest.py` scores each priced resolved event by rebuilding the exact
+live `QuestionContext` at T−h: venue price as market_probability, empty
+evidence, `narratives=False`, leave-one-out category base rates. vanta and
+the market are scored on identical snapshots against Brier/log/accuracy plus
+an always-predict-the-base-rate benchmark. Results are idempotent per
+(event, horizon) by unique index.
+
+`scripts/promote_events.py` lifts top-volume ACTIVE Polymarket markets into
+`questions`, so the live feed carries real bets with real venue prices.
+
+## Reasoning chat (v0.3)
+
+`app/agents/streaming.py` re-drives the pipeline's exact agent sequence as a
+generator; `routers/chat.py` streams it as SSE (status → agent events →
+evidence → related → forecast → done). Matched questions replay read-only;
+question creation honors operator gating. The stream owns its session — the
+request-scoped one closes before FastAPI consumes the generator. ChatConsole
+parses the stream with `lib/sse.ts` (chunk-boundary tested) and renders the
+debate progressively; static mode shows a clearly-labeled example transcript.
