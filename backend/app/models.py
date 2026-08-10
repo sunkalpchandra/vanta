@@ -77,6 +77,7 @@ class Evidence(Base):
     summary: Mapped[str] = mapped_column(Text)
     sentiment: Mapped[str] = mapped_column(String(20))  # positive | negative | neutral
     impact: Mapped[float] = mapped_column(Float)  # 0-1
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     question: Mapped[Question] = relationship(back_populates="evidence")
 
