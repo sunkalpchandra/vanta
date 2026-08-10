@@ -1,7 +1,7 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -12,19 +12,37 @@ router = APIRouter(prefix="/api/feed", tags=["feed"])
 
 
 def latest_forecasts(db: Session) -> list[tuple[Question, Forecast]]:
-    """(question, latest forecast) pairs for live (unresolved) questions."""
-    questions = db.scalars(select(Question).where(Question.resolved.is_(False))).all()
-    pairs: list[tuple[Question, Forecast]] = []
-    for q in questions:
-        latest = db.scalar(
-            select(Forecast)
-            .where(Forecast.question_id == q.id)
-            .order_by(Forecast.timestamp.desc())
-            .limit(1)
-        )
-        if latest is not None:
-            pairs.append((q, latest))
-    return pairs
+    """(question, latest forecast) pairs for live (unresolved) questions.
+
+    One query, not one per question: join each live question to its
+    max-timestamp forecast (max id breaks same-timestamp ties)."""
+    # Newest forecast id per question — ids are monotonic within a question's
+    # append-only history, so max(id) is the latest without a tie-break join.
+    newest = (
+        select(Forecast.question_id, func.max(Forecast.id).label("forecast_id"))
+        .group_by(Forecast.question_id)
+        .subquery()
+    )
+    rows = db.execute(
+        select(Question, Forecast)
+        .join(newest, newest.c.question_id == Question.id)
+        .join(Forecast, Forecast.id == newest.c.forecast_id)
+        .where(Question.resolved.is_(False))
+        .order_by(Question.id)
+    ).all()
+    return [(question, forecast) for question, forecast in rows]
+
+
+def previous_forecasts(db: Session, cutoff: datetime) -> dict[int, Forecast]:
+    """Newest forecast at-or-before `cutoff`, per question — one query."""
+    prev = (
+        select(Forecast.question_id, func.max(Forecast.id).label("forecast_id"))
+        .where(Forecast.timestamp <= cutoff)
+        .group_by(Forecast.question_id)
+        .subquery()
+    )
+    rows = db.scalars(select(Forecast).join(prev, Forecast.id == prev.c.forecast_id)).all()
+    return {forecast.question_id: forecast for forecast in rows}
 
 
 def _headline(question: Question, forecast: Forecast) -> str:
@@ -45,14 +63,10 @@ def movers(
     """Where vanta's own probability moved most over the window — the
     questions whose evidence picture is changing fastest."""
     cutoff = utcnow() - timedelta(days=days)
+    previous_by_question = previous_forecasts(db, cutoff)
     cards: list[MoverCard] = []
     for question, latest in latest_forecasts(db):
-        previous = db.scalar(
-            select(Forecast)
-            .where(Forecast.question_id == question.id, Forecast.timestamp <= cutoff)
-            .order_by(Forecast.timestamp.desc())
-            .limit(1)
-        )
+        previous = previous_by_question.get(question.id)
         if previous is None or previous.id == latest.id:
             # Younger than the window, or nothing new inside it — a question
             # whose forecasts all predate the window hasn't "moved".
@@ -78,6 +92,22 @@ SORT_KEYS = {
     "confidence": lambda q, f: f.confidence,
     "volume": lambda q, f: q.market_volume_usd,
 }
+
+
+@router.get("/sparklines")
+def sparklines(db: Session = Depends(get_db)):
+    """All live questions' probability series in one payload — the feed
+    renders 12+ sparklines without 12+ requests."""
+    live_ids = select(Question.id).where(Question.resolved.is_(False)).scalar_subquery()
+    rows = db.execute(
+        select(Forecast.question_id, Forecast.probability)
+        .where(Forecast.question_id.in_(live_ids))
+        .order_by(Forecast.question_id, Forecast.timestamp.asc(), Forecast.id.asc())
+    ).all()
+    series: dict[int, list[float]] = {}
+    for question_id, probability in rows:
+        series.setdefault(question_id, []).append(probability)
+    return series
 
 
 @router.get("", response_model=list[FeedCard])
