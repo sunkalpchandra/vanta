@@ -19,7 +19,7 @@ import argparse
 import json
 import sys
 import time
-from datetime import UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 CKPT_FILE = Path(".ingest_kalshi_ckpt.json")
@@ -77,6 +77,16 @@ def ingest_markets(db, client, args) -> None:
         time.sleep(REQUEST_PAUSE_S)
 
 
+def _parse_iso(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
 def fill_prices(db, client, args) -> None:
     from app.ingest.kalshi import SOURCE, fetch_candles, price_at
     from app.models import MarketEvent
@@ -103,6 +113,13 @@ def fill_prices(db, client, args) -> None:
         close = row.close_time
         if close.tzinfo is None:  # SQLite round-trips drop tzinfo
             close = close.replace(tzinfo=UTC)
+        # High-frequency micro-markets (15-minute BTC strikes etc.) can never
+        # have a T-7d price — skip without spending an API call.
+        opened = _parse_iso(row.raw.get("open_time"))
+        if opened is not None and (close - opened) < timedelta(days=7):
+            misses += 1
+            missed_ids.add(row.id)
+            continue
         series = str(row.raw.get("event_ticker") or row.source_id).split("-")[0]
         start_ts = int((close - timedelta(days=CANDLE_WINDOW_DAYS)).timestamp())
         closes = fetch_candles(series, row.source_id, start_ts, int(close.timestamp()), client=client)
