@@ -10,6 +10,30 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - Live prediction-market and news ingest replacing the seeded corpus.
 
+## [0.3.0] - 2026-08-10
+
+### Added
+
+- **Real markets**: checkpointed, resumable ingest of resolved binary markets
+  from Polymarket (Gamma keyset paging) and Kalshi (public cursor API) into a
+  dedicated `market_events` corpus — 100k+ events — plus promotion of
+  top-volume active markets into the live feed.
+- **Real backtest**: leakage-free scoring of the exact live pipeline against
+  pre-resolution venue prices (`price_at` never reads past the cutoff),
+  leave-one-out category base rates, no-skill benchmark, per-source coverage
+  reporting; `/api/backtest/real` + baked static scorecard. See
+  docs/BACKTEST.md.
+- **Reasoning chat**: `POST /api/chat` streams the agent debate over SSE;
+  `/chat` renders it progressively with a final scorecard. Matched questions
+  replay read-only; creation honors operator gating.
+
+### Fixed
+
+- The synthetic demo corpus was rigged: simulated vanta estimates were noised
+  around the known outcome, producing a meaningless ~100% demo accuracy.
+  Estimates now derive from the market signal only — the synthetic corpus
+  claims no edge, and the real backtest is the only accuracy claim.
+
 ## [0.2.0] - 2026-08-10
 
 ### Added
