@@ -3,11 +3,35 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { IS_STATIC } from "@/lib/config";
 import type { QuestionDetail } from "@/lib/types";
 
 const CATEGORIES = ["technology", "finance", "politics", "science", "sports", "crypto"];
 
 export function AskForm() {
+  if (IS_STATIC) {
+    return (
+      <div className="card p-6">
+        <div className="micro-label">static demo</div>
+        <p className="mt-2 text-sm leading-relaxed text-ink-2">
+          This deployment is a read-only snapshot — asking a new question runs the seven-agent
+          pipeline, which needs the live backend. Clone{" "}
+          <a
+            href="https://github.com/sunkalpchandra/vanta"
+            className="text-accent hover:underline"
+          >
+            sunkalpchandra/vanta
+          </a>{" "}
+          and run <span className="num">uvicorn app.main:app</span> +{" "}
+          <span className="num">npm run dev</span> to forecast your own questions.
+        </p>
+      </div>
+    );
+  }
+  return <LiveAskForm />;
+}
+
+function LiveAskForm() {
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [category, setCategory] = useState("technology");
