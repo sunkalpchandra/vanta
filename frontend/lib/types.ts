@@ -57,6 +57,11 @@ export interface HistoryPoint {
   probability: number;
 }
 
+export interface MarketPoint {
+  timestamp: string;
+  probability: number;
+}
+
 export interface LeaderboardRow {
   category: string;
   n_resolved: number;
