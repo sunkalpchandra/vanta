@@ -35,6 +35,11 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         path.write_text(json.dumps(payload, indent=1))
         written.append(str(path.relative_to(out_dir)))
 
+    def fetch(endpoint: str):
+        response = client.get(endpoint)
+        response.raise_for_status()  # never bake an error body into the snapshot
+        return response.json()
+
     top_level = {
         "feed.json": "/api/feed",
         "questions.json": "/api/questions",
@@ -58,18 +63,18 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     questions = client.get("/api/questions").json()
     for question in questions:
         qid = question["id"]
-        dump(data / "questions" / f"{qid}.json", client.get(f"/api/questions/{qid}").json())
-        dump(data / "history" / f"{qid}.json", client.get(f"/api/questions/{qid}/history").json())
+        dump(data / "questions" / f"{qid}.json", fetch(f"/api/questions/{qid}"))
+        dump(data / "history" / f"{qid}.json", fetch(f"/api/questions/{qid}/history"))
         dump(
             data / "market-history" / f"{qid}.json",
-            client.get(f"/api/questions/{qid}/market-history").json(),
+            fetch(f"/api/questions/{qid}/market-history"),
         )
         dump(
             data / "sensitivity" / f"{qid}.json",
-            client.get(f"/api/questions/{qid}/sensitivity").json(),
+            fetch(f"/api/questions/{qid}/sensitivity"),
         )
-        dump(data / "related" / f"{qid}.json", client.get(f"/api/questions/{qid}/related").json())
-        dump(data / "changes" / f"{qid}.json", client.get(f"/api/questions/{qid}/changes").json())
+        dump(data / "related" / f"{qid}.json", fetch(f"/api/questions/{qid}/related"))
+        dump(data / "changes" / f"{qid}.json", fetch(f"/api/questions/{qid}/changes"))
         card = client.get(f"/api/cards/{qid}.svg")
         card.raise_for_status()
         card_path = out_dir / "cards" / f"{qid}.svg"
