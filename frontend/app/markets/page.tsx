@@ -1,6 +1,8 @@
 import { MarketsBrowser } from "@/components/MarketsBrowser";
 import { ActivityTape } from "@/components/ActivityTape";
-import { getActivitySample } from "@/lib/data";
+import { MarketStatsBar } from "@/components/MarketStatsBar";
+import { MarketMovers } from "@/components/MarketMovers";
+import { getActivitySample, getMarketStatsSample, getMarketMoversSample } from "@/lib/data";
 import { IS_STATIC } from "@/lib/config";
 import * as data from "@/lib/data";
 import type { MarketsOut } from "@/lib/trader";
@@ -26,8 +28,10 @@ async function loadSample(): Promise<MarketsOut> {
 
 export default async function MarketsIndexPage() {
   const sample = await loadSample();
-  // ActivityTape fetches live itself; only the static demo needs a baked sample.
-  const tape = IS_STATIC ? await getActivitySample() : [];
+  // ActivityTape/stats/movers fetch live themselves; only the static demo needs baked props.
+  const [tape, stats, movers] = IS_STATIC
+    ? await Promise.all([getActivitySample(), getMarketStatsSample(), getMarketMoversSample()])
+    : [[], null, []];
   return (
     <div>
       <div className="mb-8">
@@ -37,7 +41,12 @@ export default async function MarketsIndexPage() {
           play money · paper trading · real market prices.
         </p>
       </div>
+      <MarketStatsBar stats={stats} />
       <MarketsBrowser sample={sample} />
+      <section className="mt-8">
+        <div className="micro-label mb-3">Biggest movers — 24h</div>
+        <MarketMovers movers={movers} windowHours={24} />
+      </section>
       <section className="mt-10">
         <div className="micro-label mb-3">Live activity — recent trades across all traders</div>
         <ActivityTape sample={tape} />
