@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Performance: constant-query feed/movers (was N+1), composite forecast index,
+  batched `/api/feed/sparklines`, gzip, Cache-Control on tolerant reads,
+  `X-Response-Time-Ms`, and a benchmark harness — measured in
+  docs/PERFORMANCE.md.
+- Market history: `market_snapshots` with a seeded 30-day walk, operator price
+  ingest, per-question market series, and the dual-line vanta-vs-market chart
+  with evidence-arrival markers.
+- Explanation surfaces: leave-one-out evidence sensitivity (LLM-free
+  counterfactual runs), what-changed diffs, related questions, derived alerts,
+  difficulty scores, and per-agent calibration curves + receipts pages.
+- Operator surface: auth-lite users + `X-API-Key` gating (opt-in), sliding
+  rate limit, market/evidence/resolve controls, watchlist lifecycle, an
+  operator CLI, and `/metrics` counters.
+- Product surface: digest page, unified search, feed RSS, starred questions,
+  CSV track record, PWA manifest, JSON-LD, "/" search shortcut.
+- Quality: frontend vitest suite, hypothesis property tests, 85% coverage
+  gate, snapshot-diff tool, request ids, hardened non-root images.
+
 - Resolution lifecycle: `POST /api/questions/{id}/resolve` freezes a question
   against its actual outcome and writes the prediction into the leaderboard's
   track record; resolved questions leave the feed and brief, and refresh /
