@@ -53,8 +53,10 @@ def movers(
             .order_by(Forecast.timestamp.desc())
             .limit(1)
         )
-        if previous is None:
-            continue  # question younger than the window
+        if previous is None or previous.id == latest.id:
+            # Younger than the window, or nothing new inside it — a question
+            # whose forecasts all predate the window hasn't "moved".
+            continue
         delta = latest.probability - previous.probability
         cards.append(
             MoverCard(
