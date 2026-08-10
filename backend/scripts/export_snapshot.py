@@ -152,6 +152,21 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         traders_resp.json() if traders_resp.status_code == 200 else {"traders": []},
     )
 
+    # Public activity tape — recent trades across all traders (bots included).
+    activity_resp = client.get("/api/activity/trades?limit=30")
+    dump(
+        data / "activity.json",
+        activity_resp.json() if activity_resp.status_code == 200 else {"trades": []},
+    )
+
+    # Price-history series for every sampled market, so the detail page charts
+    # render in the static demo.
+    (data / "market-price").mkdir(parents=True, exist_ok=True)
+    sampled_ids = {m["id"] for m in active_items} | {m["id"] for m in settled_items}
+    for event_id in sampled_ids:
+        resp = client.get(f"/api/markets/{event_id}/history")
+        dump(data / "market-price" / f"{event_id}.json", resp.json() if resp.status_code == 200 else {"points": []})
+
     dump(
         data / "meta.json",
         {"mode": "static-demo", "questions": len(questions), "commit": os.environ.get("GIT_SHA")},
