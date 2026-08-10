@@ -5,8 +5,17 @@ import { motion } from "framer-motion";
 import type { FeedCard } from "@/lib/types";
 import { pct } from "@/lib/format";
 import { CategoryBadge, EdgeBadge } from "./Badges";
+import { Sparkline } from "./Sparkline";
 
-export function FeedCardItem({ card, index }: { card: FeedCard; index: number }) {
+export function FeedCardItem({
+  card,
+  index,
+  sparkline,
+}: {
+  card: FeedCard;
+  index: number;
+  sparkline?: number[];
+}) {
   const discovery = Math.abs(card.edge) >= 0.05;
   return (
     <motion.div
@@ -36,9 +45,10 @@ export function FeedCardItem({ card, index }: { card: FeedCard; index: number })
             <div className="micro-label">vanta</div>
             <div className="num mt-1 text-2xl font-bold text-accent">{pct(card.vanta_probability)}</div>
           </div>
-          <div className="justify-self-end">
+          <div className="flex flex-col items-end gap-1.5 justify-self-end">
             <EdgeBadge edge={card.edge} />
-            <div className="micro-label mt-2 text-right">conf {card.confidence.toFixed(1)}/10</div>
+            {sparkline && <Sparkline points={sparkline} />}
+            <div className="micro-label text-right">conf {card.confidence.toFixed(1)}/10</div>
           </div>
         </div>
       </Link>
