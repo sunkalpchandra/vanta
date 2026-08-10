@@ -22,6 +22,10 @@ class QuestionContext:
     # record). None => agents fall back to the static prior. Computed by the
     # service layer so the pipeline itself stays DB-free.
     base_rate: float | None = None
+    # False => agents skip LLM narration and use template text. Set by
+    # counterfactual machinery (sensitivity analysis) that runs the pipeline
+    # many times and only needs the numbers.
+    narratives: bool = True
 
 
 @dataclass
