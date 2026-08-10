@@ -1,6 +1,7 @@
 """Forecasting service: binds the agent pipeline to persistence."""
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .agents.base import QuestionContext
@@ -27,6 +28,12 @@ def build_context(question: Question, evidence: list[Evidence]) -> QuestionConte
 def run_and_store_forecast(db: Session, question: Question) -> tuple[Forecast, PipelineResult]:
     """Run the full agent pipeline for a question and persist the results."""
     result = run_pipeline(build_context(question, question.evidence))
+
+    # The pipeline can take a while (LLM narratives): a resolve may have landed
+    # since the caller's guard. Re-check before touching the frozen record.
+    resolved_now = db.scalar(select(Question.resolved).where(Question.id == question.id))
+    if resolved_now:
+        raise ResolutionError("question was resolved while the pipeline ran; forecast discarded")
 
     # Replace prior agent reports; keep forecast history append-only.
     db.query(AgentReport).filter(AgentReport.question_id == question.id).delete()
@@ -97,9 +104,11 @@ class ResolutionError(ValueError):
 
 def resolve_question(db: Session, question: Question, outcome: bool) -> Prediction:
     """Settle a question: freeze vanta's final call against the actual outcome
-    and write the resolved Prediction row that feeds the accuracy leaderboard."""
-    if question.resolved:
-        raise ResolutionError("question is already resolved")
+    and write the resolved Prediction row that feeds the accuracy leaderboard.
+
+    Concurrency-safe: the freeze is a guarded UPDATE (only one caller can flip
+    resolved 0->1), and the unique index on predictions.question_id backstops
+    the insert at the database level."""
     latest = db.scalar(
         select(Forecast)
         .where(Forecast.question_id == question.id)
@@ -109,6 +118,16 @@ def resolve_question(db: Session, question: Question, outcome: bool) -> Predicti
     if latest is None:
         raise ResolutionError("question has no forecast to score")
 
+    resolved_at = utcnow()
+    claimed = db.execute(
+        update(Question)
+        .where(Question.id == question.id, Question.resolved.is_(False))
+        .values(resolved=True, outcome=int(outcome), resolved_at=resolved_at)
+    ).rowcount
+    if claimed == 0:
+        db.rollback()
+        raise ResolutionError("question is already resolved")
+
     prediction = Prediction(
         question_id=question.id,
         question_text=question.question,
@@ -116,12 +135,14 @@ def resolve_question(db: Session, question: Question, outcome: bool) -> Predicti
         market_probability=question.market_probability,
         vanta_probability=latest.probability,
         outcome=int(outcome),
-        resolved_at=utcnow(),
+        resolved_at=resolved_at,
     )
-    question.resolved = True
-    question.outcome = int(outcome)
-    question.resolved_at = prediction.resolved_at
     db.add(prediction)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:  # unique(question_id) — a concurrent resolve won
+        db.rollback()
+        raise ResolutionError("question is already resolved") from exc
     db.refresh(prediction)
+    db.refresh(question)
     return prediction
