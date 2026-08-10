@@ -25,7 +25,9 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     (data / "market-history").mkdir(parents=True, exist_ok=True)
     (data / "sensitivity").mkdir(parents=True, exist_ok=True)
     (data / "related").mkdir(parents=True, exist_ok=True)
+    (data / "changes").mkdir(parents=True, exist_ok=True)
     (data / "agent-records").mkdir(parents=True, exist_ok=True)
+    (data / "agent-calibration").mkdir(parents=True, exist_ok=True)
     (out_dir / "cards").mkdir(parents=True, exist_ok=True)
     written: list[str] = []
 
@@ -67,6 +69,7 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
             client.get(f"/api/questions/{qid}/sensitivity").json(),
         )
         dump(data / "related" / f"{qid}.json", client.get(f"/api/questions/{qid}/related").json())
+        dump(data / "changes" / f"{qid}.json", client.get(f"/api/questions/{qid}/changes").json())
         card = client.get(f"/api/cards/{qid}.svg")
         card.raise_for_status()
         card_path = out_dir / "cards" / f"{qid}.svg"
@@ -77,6 +80,9 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         response = client.get(f"/api/agents/{agent_name}/records")
         response.raise_for_status()
         dump(data / "agent-records" / f"{agent_name}.json", response.json())
+        calibration = client.get(f"/api/agents/{agent_name}/calibration")
+        calibration.raise_for_status()
+        dump(data / "agent-calibration" / f"{agent_name}.json", calibration.json())
 
     rss = client.get("/api/brief/rss")
     rss.raise_for_status()

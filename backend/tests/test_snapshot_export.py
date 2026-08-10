@@ -57,6 +57,9 @@ def test_snapshot_related_and_agent_records(snapshot_dir):
         assert (snapshot_dir / "data" / "related" / f"{q['id']}.json").exists()
     for agent in ["research", "quant", "market", "sentiment", "historian", "synthesis"]:
         assert (snapshot_dir / "data" / "agent-records" / f"{agent}.json").exists()
+        assert (snapshot_dir / "data" / "agent-calibration" / f"{agent}.json").exists()
+    for q in questions:
+        assert (snapshot_dir / "data" / "changes" / f"{q['id']}.json").exists()
     assert (snapshot_dir / "track-record.csv").read_text().startswith("question_id,")
 
 
