@@ -1,11 +1,12 @@
 """Forecasting service: binds the agent pipeline to persistence."""
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .agents.base import QuestionContext
 from .agents.historian import base_rate_for
 from .agents.orchestrator import PipelineResult, run_pipeline
-from .models import AgentReport, Evidence, Forecast, Question
+from .models import AgentReport, Evidence, Forecast, Prediction, Question, utcnow
 
 
 def build_context(question: Question, evidence: list[Evidence]) -> QuestionContext:
@@ -88,3 +89,39 @@ def create_question(
     db.commit()
     db.refresh(question)
     return question
+
+
+class ResolutionError(ValueError):
+    """Raised when a question cannot be resolved (already resolved / no forecast)."""
+
+
+def resolve_question(db: Session, question: Question, outcome: bool) -> Prediction:
+    """Settle a question: freeze vanta's final call against the actual outcome
+    and write the resolved Prediction row that feeds the accuracy leaderboard."""
+    if question.resolved:
+        raise ResolutionError("question is already resolved")
+    latest = db.scalar(
+        select(Forecast)
+        .where(Forecast.question_id == question.id)
+        .order_by(Forecast.timestamp.desc())
+        .limit(1)
+    )
+    if latest is None:
+        raise ResolutionError("question has no forecast to score")
+
+    prediction = Prediction(
+        question_id=question.id,
+        question_text=question.question,
+        category=question.category,
+        market_probability=question.market_probability,
+        vanta_probability=latest.probability,
+        outcome=int(outcome),
+        resolved_at=utcnow(),
+    )
+    question.resolved = True
+    question.outcome = int(outcome)
+    question.resolved_at = prediction.resolved_at
+    db.add(prediction)
+    db.commit()
+    db.refresh(prediction)
+    return prediction
