@@ -28,3 +28,16 @@ test("methodology labels the demo corpus honestly", async ({ page }) => {
   await expect(page.getByText(/seeded demo corpus/i)).toBeVisible();
   await expect(page.getByText(/deterministic fixtures/i)).toBeVisible();
 });
+
+test("archive lists resolved calls with outcomes", async ({ page }) => {
+  await page.goto("archive/");
+  const rows = page.locator("table tbody tr");
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBeGreaterThanOrEqual(5);
+});
+
+test("digest renders category tiles", async ({ page }) => {
+  await page.goto("digest/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText(/technology/i).first()).toBeVisible();
+});
