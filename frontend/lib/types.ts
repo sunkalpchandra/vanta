@@ -73,8 +73,31 @@ export interface StatsOut {
   market_accuracy: number | null;
   vanta_brier: number | null;
   market_brier: number | null;
+  vanta_log_score: number | null;
+  market_log_score: number | null;
+  vanta_reliability: number | null;
+  vanta_resolution: number | null;
+  outcome_uncertainty: number | null;
   avg_abs_edge: number | null;
   llm_narratives: boolean;
+}
+
+export interface MoverCard {
+  question_id: number;
+  question: string;
+  category: string;
+  current: number;
+  previous: number;
+  delta: number;
+  window_days: number;
+}
+
+export interface AgentLeaderboardRow {
+  agent: string;
+  n_resolved: number;
+  accuracy: number;
+  brier: number;
+  log_score: number;
 }
 
 export interface CategoryOut {
