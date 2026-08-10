@@ -19,17 +19,24 @@ export const metadata: Metadata = {
 
 const NAV = [
   { href: "/", label: "Feed" },
-  { href: "/brief", label: "Morning Brief" },
+  { href: "/brief", label: "Brief" },
   { href: "/leaderboard", label: "Accuracy" },
+  { href: "/agents", label: "Agents" },
   { href: "/archive", label: "Archive" },
-  { href: "/methodology", label: "Methodology" },
-  { href: "/ask", label: "Ask vanta" },
+  { href: "/methodology", label: "Method" },
+  { href: "/ask", label: "Ask" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        >
+          Skip to content
+        </a>
         <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-5">
             <Link href="/" className="flex shrink-0 items-baseline gap-2">
@@ -50,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">{children}</main>
+        <main id="main" className="mx-auto max-w-6xl px-5 pb-24 pt-8">{children}</main>
         <footer className="border-t border-line py-6">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5">
             <p className="text-xs text-muted">
