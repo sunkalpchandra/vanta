@@ -1,4 +1,6 @@
+import logging
 import time
+import uuid
 from collections import deque
 from contextlib import asynccontextmanager
 
@@ -12,6 +14,8 @@ from .db import Base, SessionLocal, engine
 from .llm import llm_available
 from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, stats
 from .seed import seed_if_empty
+
+logger = logging.getLogger("vanta")
 
 # Read endpoints that tolerate short staleness get client/proxy caching.
 # Writes and operator reads stay uncached.
@@ -54,6 +58,23 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 # Sliding-window limiter for mutating requests. In-memory and per-process —
 # honest scope: a demo-grade guard against runaway clients, not DDoS armor.
 _rate_buckets: dict[str, deque] = {}
+
+
+@app.middleware("http")
+async def request_id_and_error_shield(request: Request, call_next):
+    """Every response carries an id; unhandled errors become a clean 500 that
+    cites it instead of a bare traceback response."""
+    request_id = request.headers.get("X-Request-Id") or uuid.uuid4().hex[:16]
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("unhandled error request_id=%s path=%s", request_id, request.url.path)
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "internal error", "request_id": request_id},
+        )
+    response.headers["X-Request-Id"] = request_id
+    return response
 
 
 @app.middleware("http")
