@@ -95,6 +95,34 @@ class LeaderboardRow(BaseModel):
     market_brier: float
 
 
+class StatsOut(BaseModel):
+    n_live_questions: int
+    n_resolved: int
+    vanta_accuracy: float | None
+    market_accuracy: float | None
+    vanta_brier: float | None
+    market_brier: float | None
+    avg_abs_edge: float | None
+    llm_narratives: bool
+
+
+class CategoryOut(BaseModel):
+    category: str
+    base_rate: float
+    n_live_questions: int
+    n_resolved: int
+
+
+class CalibrationBinOut(BaseModel):
+    mid: float
+    vanta_mean_predicted: float | None
+    vanta_observed_rate: float | None
+    vanta_count: int
+    market_mean_predicted: float | None
+    market_observed_rate: float | None
+    market_count: int
+
+
 class BriefItem(BaseModel):
     rank: int
     question_id: int
