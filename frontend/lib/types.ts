@@ -101,6 +101,17 @@ export interface BriefItem {
   category: string;
   market_probability: number;
   vanta_probability: number;
+  confidence: number;
   edge: number;
   one_liner: string;
+}
+
+export interface PredictionOut {
+  question_id: number | null;
+  question_text: string;
+  category: string;
+  market_probability: number;
+  vanta_probability: number;
+  outcome: number;
+  resolved_at: string;
 }
