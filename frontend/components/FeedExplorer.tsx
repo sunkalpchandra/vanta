@@ -15,7 +15,13 @@ export function FeedExplorer({
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<FeedSort>("edge");
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [starredIds, setStarredIds] = useState<number[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    import("@/lib/starred").then((m) => setStarredIds(m.getStarred()));
+  }, [starredOnly]);
 
   // "/" focuses search from anywhere on the page (unless already typing).
   useEffect(() => {
@@ -34,7 +40,8 @@ export function FeedExplorer({
     () => ["all", ...Array.from(new Set(cards.map((c) => c.category))).sort()],
     [cards],
   );
-  const visible = filterFeed(cards, category, query, sort);
+  const filtered = filterFeed(cards, category, query, sort);
+  const visible = starredOnly ? filtered.filter((c) => starredIds.includes(c.question_id)) : filtered;
 
   return (
     <div>
@@ -54,6 +61,15 @@ export function FeedExplorer({
               {c}
             </button>
           ))}
+          <button
+            onClick={() => setStarredOnly((v) => !v)}
+            aria-pressed={starredOnly}
+            className={`micro-label rounded-full border px-3 py-1.5 transition-colors ${
+              starredOnly ? "border-accent !text-accent" : "border-line !text-ink-2 hover:border-accent/50"
+            }`}
+          >
+            ★ starred
+          </button>
         </div>
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <select
