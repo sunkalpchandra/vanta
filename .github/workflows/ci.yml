@@ -44,6 +44,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
+      - run: npx vitest run
       - run: npx next build
 
   static-export:
