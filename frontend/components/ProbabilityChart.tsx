@@ -2,20 +2,21 @@
 
 import {
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import type { HistoryPoint } from "@/lib/types";
-import { pct, shortDate } from "@/lib/format";
+import type { HistoryPoint, MarketPoint } from "@/lib/types";
+import { shortDate } from "@/lib/format";
 
 const INK_MUTED = "#5c6675";
 const GRID = "#1e2632";
-const SERIES = "#3987e5";
+const VANTA = "#3987e5"; // categorical slot 1
+const MARKET = "#d95926"; // categorical slot 2
 
 function ChartTooltip({
   active,
@@ -23,30 +24,58 @@ function ChartTooltip({
   label,
 }: {
   active?: boolean;
-  payload?: { value: number }[];
+  payload?: { name: string; value: number | null; color: string }[];
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
+  const rows = payload.filter((entry) => entry.value != null);
+  if (!rows.length) return null;
   return (
     <div className="card px-3 py-2 text-xs shadow-xl">
       <div className="text-muted">{label ? shortDate(label) : ""}</div>
-      <div className="num mt-0.5 text-sm font-bold text-ink">{payload[0].value.toFixed(1)}%</div>
+      {rows.map((entry) => (
+        <div key={entry.name} className="mt-1 flex items-center gap-2">
+          <span className="h-2 w-2 rounded-sm" style={{ background: entry.color }} />
+          <span className="text-ink-2">{entry.name}</span>
+          <span className="num ml-auto pl-3 font-bold text-ink">{entry.value?.toFixed(1)}%</span>
+        </div>
+      ))}
     </div>
   );
 }
 
+/** vanta vs the market, over time — the product's core picture. Both series
+ * merge onto one day-keyed axis; the market line is dashed so the pair stays
+ * distinguishable without color. */
 export function ProbabilityChart({
   history,
-  marketProbability,
+  marketHistory,
 }: {
   history: HistoryPoint[];
-  marketProbability: number;
+  marketHistory: MarketPoint[];
 }) {
-  const data = history.map((h) => ({ ...h, probability: +(h.probability * 100).toFixed(1) }));
+  const byDay = new Map<string, { timestamp: string; vanta?: number; market?: number }>();
+  const dayKey = (iso: string) => iso.slice(0, 10);
+  for (const point of history) {
+    const key = dayKey(point.timestamp);
+    byDay.set(key, {
+      ...(byDay.get(key) ?? { timestamp: point.timestamp }),
+      vanta: +(point.probability * 100).toFixed(1),
+    });
+  }
+  for (const point of marketHistory) {
+    const key = dayKey(point.timestamp);
+    byDay.set(key, {
+      ...(byDay.get(key) ?? { timestamp: point.timestamp }),
+      market: +(point.probability * 100).toFixed(1),
+    });
+  }
+  const data = Array.from(byDay.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 8, right: 56, bottom: 0, left: -16 }}>
+        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
           <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="timestamp"
@@ -65,24 +94,30 @@ export function ProbabilityChart({
             tickLine={false}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: INK_MUTED, strokeDasharray: "3 3" }} />
-          <ReferenceLine
-            y={marketProbability * 100}
-            stroke={INK_MUTED}
-            strokeDasharray="4 4"
-            label={{
-              value: `market ${pct(marketProbability)}`,
-              position: "right",
-              fill: INK_MUTED,
-              fontSize: 11,
-            }}
+          <Legend
+            formatter={(value: string) => <span style={{ color: "#9aa4b2", fontSize: 12 }}>{value}</span>}
+            iconSize={10}
           />
           <Line
             type="monotone"
-            dataKey="probability"
-            stroke={SERIES}
+            dataKey="market"
+            name="market"
+            stroke={MARKET}
             strokeWidth={2}
+            strokeDasharray="7 3"
+            connectNulls
             dot={false}
-            activeDot={{ r: 4, fill: SERIES, stroke: "#0f131b", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: MARKET, stroke: "#0f131b", strokeWidth: 2 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="vanta"
+            name="vanta"
+            stroke={VANTA}
+            strokeWidth={2}
+            connectNulls
+            dot={false}
+            activeDot={{ r: 4, fill: VANTA, stroke: "#0f131b", strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>
