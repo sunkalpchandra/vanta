@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..discovery import discover, pending_candidates
+from ..discovery import all_candidates, discover, is_covered, pending_candidates
 from ..models import WatchlistItem
 from ..schemas import DiscoveredQuestion, QuestionOut, WatchlistIn
 
@@ -41,6 +41,14 @@ def add_watchlist_item(body: WatchlistIn, db: Session = Depends(get_db)):
     exists = db.scalar(select(WatchlistItem).where(WatchlistItem.question == body.question))
     if exists is not None:
         raise HTTPException(status_code=409, detail="already on the watchlist")
+    watchlist_texts = [c.question for c in all_candidates(db)]
+    if body.question in watchlist_texts:
+        raise HTTPException(status_code=409, detail="already on the watchlist")
+    if is_covered(db, body.question, extra_texts=watchlist_texts):
+        raise HTTPException(
+            status_code=409,
+            detail="already covered by an existing question or watchlist signal",
+        )
     item = WatchlistItem(
         question=body.question,
         category=body.category,
