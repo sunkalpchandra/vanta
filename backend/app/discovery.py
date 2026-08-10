@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Question
+from .models import Question, WatchlistItem
 from .quant.analogs import tokenize
 from .service import create_question, run_and_store_forecast
 
@@ -95,9 +95,18 @@ def _is_duplicate(candidate: Candidate, existing_questions: list[str]) -> bool:
     return False
 
 
+def all_candidates(db: Session) -> list[Candidate]:
+    """Built-in watchlist plus user-added items, user items first."""
+    user_items = [
+        Candidate(w.question, w.category, w.horizon_days, w.rationale or "user-added watchlist item")
+        for w in db.scalars(select(WatchlistItem).order_by(WatchlistItem.created_at.asc())).all()
+    ]
+    return user_items + WATCHLIST
+
+
 def pending_candidates(db: Session) -> list[Candidate]:
     existing = list(db.scalars(select(Question.question)).all())
-    return [c for c in WATCHLIST if not _is_duplicate(c, existing)]
+    return [c for c in all_candidates(db) if not _is_duplicate(c, existing)]
 
 
 def discover(db: Session, count: int) -> list[tuple[Question, Candidate]]:
