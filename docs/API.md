@@ -55,7 +55,8 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/health` | `{status, llm_narratives}`. |
+| `GET /api/health` | `{status, db, llm_narratives}` — includes a live DB probe. |
+| `GET /api/meta` | Build identity: name, version, docs path, source repo. |
 
 ## Error semantics
 
