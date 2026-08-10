@@ -17,7 +17,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -106,20 +106,32 @@ def list_watches(x_api_key: str | None = Header(default=None), db: Session = Dep
         .order_by(MarketWatch.created_at.asc(), MarketEvent.id.asc())
     ).all()
     since = utcnow() - timedelta(hours=24)
+    # Earliest in-window price per watched event in ONE grouped query + join —
+    # not a per-event lookup in the loop (the movers endpoint's pattern).
+    event_ids = [e.id for e in events]
+    earliest_price: dict[int, float] = {}
+    if event_ids:
+        earliest = (
+            select(PriceTick.event_id.label("event_id"), func.min(PriceTick.timestamp).label("min_ts"))
+            .where(PriceTick.timestamp >= since, PriceTick.event_id.in_(event_ids))
+            .group_by(PriceTick.event_id)
+            .subquery()
+        )
+        for eid, price in db.execute(
+            select(PriceTick.event_id, PriceTick.yes_price).join(
+                earliest,
+                (PriceTick.event_id == earliest.c.event_id) & (PriceTick.timestamp == earliest.c.min_ts),
+            )
+        ).all():
+            earliest_price.setdefault(eid, price)
     items: list[WatchItem] = []
     for event in events:
         delta: float | None = None
         moved = False
-        if event.yes_price is not None:
-            earliest = db.scalar(
-                select(PriceTick.yes_price)
-                .where(PriceTick.event_id == event.id, PriceTick.timestamp >= since)
-                .order_by(PriceTick.timestamp.asc(), PriceTick.id.asc())
-                .limit(1)
-            )
-            if earliest is not None:
-                delta = round(event.yes_price - earliest, 6)
-                moved = abs(delta) >= MOVE_THRESHOLD
+        base = earliest_price.get(event.id)
+        if event.yes_price is not None and base is not None:
+            delta = round(event.yes_price - base, 6)
+            moved = abs(delta) >= MOVE_THRESHOLD
         items.append(
             WatchItem(
                 event_id=event.id,
