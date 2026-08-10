@@ -127,3 +127,36 @@ def test_search_category_scopes_both_result_sets(client):
     total = len(unscoped["questions"]) + len(unscoped["archive"])
     scoped = len(body["questions"]) + len(body["archive"])
     assert scoped <= total
+
+
+def test_brief_rss_has_items(client):
+    """Direct-call defaults regression: a Query sentinel leaking into
+    morning_brief() emptied every RSS channel while JSON kept working."""
+    from app.routers.brief import _local_cache
+
+    _local_cache.clear()
+    body = client.get("/api/brief/rss?count=5").text
+    assert "<item>" in body
+    scoped = client.get("/api/brief/rss?count=5&category=technology").text
+    assert "<item>" in scoped
+    _local_cache.clear()
+
+
+def test_brief_category_is_validated(client):
+    """'all' collided with the unscoped cache key and poisoned it empty."""
+    from app.routers.brief import _local_cache
+
+    _local_cache.clear()
+    assert client.get("/api/brief?count=5&category=all").status_code == 422
+    assert client.get("/api/brief?count=5&category=nonsense").status_code == 422
+    assert len(client.get("/api/brief?count=5").json()) > 0
+    _local_cache.clear()
+
+
+def test_whitespace_note_rejected(client):
+    qid = client.get("/api/questions").json()[-1]["id"]
+    assert client.post(f"/api/questions/{qid}/notes", json={"body": "   "}).status_code == 422
+    created = client.post(f"/api/questions/{qid}/notes", json={"body": "  real note  "})
+    assert created.status_code == 201
+    assert created.json()["body"] == "real note"
+    client.delete(f"/api/questions/{qid}/notes/{created.json()['id']}")
