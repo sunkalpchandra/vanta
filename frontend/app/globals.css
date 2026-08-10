@@ -52,3 +52,35 @@ body {
 .card-hover:hover {
   border-color: #2c3847;
 }
+
+/* Print: the brief and question pages double as paper handouts — drop the
+   chrome, flip to ink-on-white, keep cards as light outlines. */
+@media print {
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  nav,
+  footer,
+  button,
+  input,
+  select {
+    display: none !important;
+  }
+  .card {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  a {
+    color: #111 !important;
+    text-decoration: none;
+  }
+  .text-ink, .text-ink-2, .micro-label, h1, h2, h3 {
+    color: #111 !important;
+  }
+  .text-muted {
+    color: #555 !important;
+  }
+}
