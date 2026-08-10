@@ -6,7 +6,7 @@ Cached for 10 minutes (Redis when REDIS_URL is set, in-process otherwise).
 import json
 import time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -32,6 +32,8 @@ def _cache_get(key: str) -> str | None:
     hit = _local_cache.get(key)
     if hit and time.monotonic() - hit[0] < CACHE_TTL_SECONDS:
         return hit[1]
+    if hit:
+        del _local_cache[key]
     return None
 
 
@@ -45,11 +47,14 @@ def _cache_set(key: str, value: str) -> None:
             return
         except Exception:
             pass
-    _local_cache[key] = (time.monotonic(), value)
+    now = time.monotonic()
+    for stale in [k for k, (t, _) in _local_cache.items() if now - t >= CACHE_TTL_SECONDS]:
+        del _local_cache[stale]
+    _local_cache[key] = (now, value)
 
 
 @router.get("", response_model=list[BriefItem])
-def morning_brief(count: int = 5, db: Session = Depends(get_db)):
+def morning_brief(count: int = Query(5, ge=1, le=20), db: Session = Depends(get_db)):
     cache_key = f"vanta:brief:{count}"
     cached = _cache_get(cache_key)
     if cached:

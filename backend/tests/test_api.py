@@ -90,3 +90,25 @@ def test_share_card_svg(client):
 
 def test_missing_question_404(client):
     assert client.get("/api/questions/99999").status_code == 404
+
+
+def test_timestamps_are_utc_qualified(client):
+    """SQLite drops tzinfo; the API must still emit zone-qualified UTC so JS
+    Date() doesn't parse timestamps as local time (regression test)."""
+    qid = client.get("/api/questions").json()[0]["id"]
+    history = client.get(f"/api/questions/{qid}/history").json()
+    assert history[0]["timestamp"].endswith("Z")
+    detail = client.get(f"/api/questions/{qid}").json()
+    assert detail["created_at"].endswith("Z")
+    assert detail["latest_forecast"]["timestamp"].endswith("Z")
+
+
+def test_brief_count_is_validated(client):
+    assert client.get("/api/brief?count=0").status_code == 422
+    assert client.get("/api/brief?count=-1").status_code == 422
+    assert client.get("/api/brief?count=21").status_code == 422
+
+
+def test_ask_rejects_unknown_category(client):
+    body = {"question": "Will this bogus category be rejected by validation?", "category": "x" * 80}
+    assert client.post("/api/questions", json=body).status_code == 422

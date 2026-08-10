@@ -18,15 +18,23 @@ from .service import create_question, run_and_store_forecast
 
 
 def seed_if_empty(db: Session) -> bool:
-    if db.scalar(select(Question).limit(1)) is not None:
-        return False
-    _seed_questions(db)
-    _seed_resolved_predictions(db)
-    return True
+    """Resumable: each seed question and the prediction corpus are checked
+    independently, so a startup interrupted mid-seed completes on the next
+    boot instead of being blocked forever by a partial database."""
+    changed = _seed_questions(db)
+    if db.scalar(select(Prediction).limit(1)) is None:
+        _seed_resolved_predictions(db)
+        changed = True
+    return changed
 
 
-def _seed_questions(db: Session) -> None:
+def _seed_questions(db: Session) -> bool:
+    existing = set(db.scalars(select(Question.question)).all())
+    changed = False
     for spec in SEED_QUESTIONS:
+        if spec["question"] in existing:
+            continue
+        changed = True
         question = create_question(
             db,
             text=spec["question"],
@@ -40,6 +48,7 @@ def _seed_questions(db: Session) -> None:
         forecast, _ = run_and_store_forecast(db, question)
         _backfill_history(db, question, forecast)
     db.commit()
+    return changed
 
 
 def _backfill_history(db: Session, question: Question, forecast: Forecast, days: int = 30) -> None:

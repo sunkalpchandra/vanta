@@ -1,6 +1,22 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+
+
+def _to_utc_iso(value: datetime) -> str:
+    """Serialize as zone-qualified UTC. SQLite returns naive datetimes even for
+    DateTime(timezone=True) columns; without an explicit offset, JS Date()
+    parses them as local time and shifts every chart date by the viewer's UTC
+    offset."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+UTCDateTime = Annotated[datetime, PlainSerializer(_to_utc_iso, return_type=str)]
+
+Category = Literal["technology", "finance", "politics", "science", "sports", "crypto"]
 
 
 class EvidenceOut(BaseModel):
@@ -29,7 +45,7 @@ class ForecastOut(BaseModel):
     confidence: float
     reasoning: str
     risk_factors: list
-    timestamp: datetime
+    timestamp: UTCDateTime
 
 
 class QuestionOut(BaseModel):
@@ -42,7 +58,7 @@ class QuestionOut(BaseModel):
     market_probability: float
     market_volume_usd: float
     market_liquidity: str
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class QuestionDetail(QuestionOut):
@@ -64,7 +80,7 @@ class FeedCard(BaseModel):
 
 
 class HistoryPoint(BaseModel):
-    timestamp: datetime
+    timestamp: UTCDateTime
     probability: float
 
 
@@ -90,6 +106,6 @@ class BriefItem(BaseModel):
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=10, max_length=500)
-    category: str = "technology"
+    category: Category = "technology"
     horizon_days: int = Field(default=90, ge=1, le=1000)
     market_probability: float | None = Field(default=None, gt=0, lt=1)
