@@ -7,7 +7,8 @@ export function StatsBar({ stats }: { stats: StatsOut }) {
       <StatTile
         label="Resolved questions"
         value={String(stats.n_resolved)}
-        sub={`${stats.n_live_questions} live`}
+        sub={`${stats.n_live_questions} live · view archive`}
+        href="/archive"
       />
       <StatTile
         label="vanta accuracy"
