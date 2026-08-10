@@ -7,6 +7,7 @@ import { DebatePanel } from "@/components/DebatePanel";
 import { EvidenceList } from "@/components/EvidenceList";
 import { LiveControls } from "@/components/LiveControls";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
+import { RelatedQuestions } from "@/components/RelatedQuestions";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { StatTile } from "@/components/StatTile";
 import { shareCardHref } from "@/lib/api";
@@ -128,6 +129,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
 
           <AnalogsPanel reports={detail.agent_reports} />
           <SensitivityPanel questionId={detail.id} />
+          <RelatedQuestions questionId={detail.id} />
           <LiveControls questionId={detail.id} resolved={detail.resolved} />
         </>
       )}
