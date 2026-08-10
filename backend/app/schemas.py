@@ -226,6 +226,18 @@ class DiscoveredQuestion(BaseModel):
     rationale: str
 
 
+class NoteIn(BaseModel):
+    body: str = Field(min_length=3, max_length=1000)
+
+
+class NoteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    body: str
+    created_at: UTCDateTime
+
+
 class WatchlistIn(BaseModel):
     question: str = Field(min_length=10, max_length=500)
     category: Category = "technology"
