@@ -27,6 +27,24 @@ def test_watchlist_rejects_duplicates(client):
     assert client.post("/api/discover/watchlist", json=ITEM).status_code == 409
 
 
+def test_watchlist_list_and_delete(client):
+    extra = {"question": "Will a spot commodity ETF double its holdings within a year?", "category": "finance"}
+    created = client.post("/api/discover/watchlist", json=extra).json()
+    listed = client.get("/api/discover/watchlist").json()
+    assert any(w["id"] == created["id"] for w in listed)
+    assert client.delete(f"/api/discover/watchlist/{created['id']}").status_code == 204
+    assert client.delete(f"/api/discover/watchlist/{created['id']}").status_code == 404
+    remaining = client.get("/api/discover/watchlist").json()
+    assert all(w["id"] != created["id"] for w in remaining)
+
+
+def test_calibration_category_filter(client):
+    finance = client.get("/api/leaderboard/calibration?category=finance").json()
+    everything = client.get("/api/leaderboard/calibration").json()
+    assert sum(b["vanta_count"] for b in finance) < sum(b["vanta_count"] for b in everything)
+    assert client.get("/api/leaderboard/calibration?category=nonexistent").json() == []
+
+
 def test_watchlist_item_flows_through_discovery(client):
     # Mint until our item comes through (user items are queued first).
     created = client.post("/api/discover?count=1").json()
