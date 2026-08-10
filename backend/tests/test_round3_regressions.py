@@ -41,21 +41,21 @@ def test_error_responses_not_publicly_cached(client):
 
 
 def test_changes_ignores_synthetic_backfill(client):
-    """A freshly seeded question has one real run + 30 backfill rows; the
-    'previous run' must not be a random-walk snapshot."""
+    """The 'previous run' must never be a synthetic random-walk snapshot.
+    Deterministic setup: seeded questions carry exactly one real run + 30
+    backfill rows, so before any refresh the delta must be null; after one
+    refresh, 'from' must equal the pre-refresh REAL probability — not
+    whichever backfill row happens to sort next."""
     seeded_qid = client.get("/api/questions").json()[-1]["id"]
     history = client.get(f"/api/questions/{seeded_qid}/history").json()
     assert len(history) >= 30  # backfill definitely present
-    payload = client.get(f"/api/questions/{seeded_qid}/changes").json()
-    # Only one REAL run exists (unless another module refreshed this question);
-    # either way the previous run must never be the seeded walk: with a single
-    # real run delta is null, with two the delta matches real forecasts only.
-    if payload["delta"] is None:
-        assert payload["from"] is None
-    else:
-        client.post(f"/api/questions/{seeded_qid}/refresh")
-        after = client.get(f"/api/questions/{seeded_qid}/changes").json()
-        assert after["from"] is not None
+    before = client.get(f"/api/questions/{seeded_qid}/changes").json()
+    assert before["delta"] is None and before["from"] is None
+    real_prob = client.get(f"/api/questions/{seeded_qid}").json()["latest_forecast"]["probability"]
+    client.post(f"/api/questions/{seeded_qid}/refresh")
+    after = client.get(f"/api/questions/{seeded_qid}/changes").json()
+    assert after["from"] == pytest.approx(real_prob)
+    assert after["delta"] == pytest.approx(after["to"] - after["from"], abs=1e-3)
 
 
 def test_ask_is_gated_when_keys_required(client):
