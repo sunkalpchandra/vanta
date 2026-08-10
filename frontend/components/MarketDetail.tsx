@@ -167,9 +167,11 @@ export function MarketDetail({
         <ChartArea history={history} />
       </div>
 
-      <div className="mt-4">
-        <MarketForecast eventId={market.id} initial={forecast} />
-      </div>
+      {!settled && (
+        <div className="mt-4">
+          <MarketForecast eventId={market.id} initial={forecast} />
+        </div>
+      )}
 
       <div className="card mt-4 p-5">
         <div className="micro-label mb-3">{settled ? "Settlement" : "Trade — virtual ⓥ credits"}</div>
