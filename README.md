@@ -60,7 +60,7 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 - **Explanations** — leave-one-out evidence sensitivity, what-changed diffs, related questions, historical analogs, difficulty scores
 - **Operations** — alerts, digest, unified search, starred questions, operator notes, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
 - **Performance, measured** — constant-query hot paths, batched sparklines, gzip + caching; see [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
-- **Tested end to end** — 153 backend tests (95% coverage), 21 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
+- **Tested end to end** — 157 backend tests (95% coverage), 21 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
 - **Keyboard-first** — `/` focuses search, `[` and `]` page through questions; brief and question pages print cleanly
 
 ## Quick start (no keys, no Docker)
