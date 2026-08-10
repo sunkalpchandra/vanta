@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .llm import llm_available
-from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, stats, users
+from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, search, stats, users
 from .seed import seed_if_empty
 
 logger = logging.getLogger("vanta")
@@ -59,6 +59,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 # honest scope: a demo-grade guard against runaway clients, not DDoS armor.
 _rate_buckets: dict[str, deque] = {}
 
+# Per-process request counters exposed at /metrics (Prometheus text format).
+_request_counts: dict[tuple[str, int], int] = {}
+
 
 @app.middleware("http")
 async def request_id_and_error_shield(request: Request, call_next):
@@ -103,6 +106,12 @@ async def timing_and_cache_headers(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
     response.headers["X-Response-Time-Ms"] = f"{(time.perf_counter() - start) * 1000:.1f}"
+    if request.url.path.startswith("/api"):
+        # Route template when resolved, else the raw path bucket "other".
+        route = request.scope.get("route")
+        path_label = getattr(route, "path", "other")
+        key = (f"{request.method} {path_label}", response.status_code)
+        _request_counts[key] = _request_counts.get(key, 0) + 1
     if request.method == "GET" and "cache-control" not in response.headers:
         for prefix, max_age in CACHE_RULES:
             if request.url.path.startswith(prefix):
@@ -120,6 +129,22 @@ app.include_router(discover.router)
 app.include_router(agents.router)
 app.include_router(alerts.router)
 app.include_router(users.router)
+app.include_router(search.router)
+
+
+@app.get("/metrics")
+def metrics():
+    """Per-process request counters, Prometheus text exposition format.
+    Honest scope: counters reset on restart and are per-worker."""
+    from fastapi.responses import PlainTextResponse
+
+    lines = [
+        "# HELP vanta_requests_total API requests by route and status.",
+        "# TYPE vanta_requests_total counter",
+    ]
+    for (route, status), count in sorted(_request_counts.items()):
+        lines.append(f'vanta_requests_total{{route="{route}",status="{status}"}} {count}')
+    return PlainTextResponse("\n".join(lines) + "\n")
 
 
 @app.get("/api/meta")
