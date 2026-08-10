@@ -9,6 +9,7 @@ import { LiveControls } from "@/components/LiveControls";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { RelatedQuestions } from "@/components/RelatedQuestions";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
+import { WhatChanged } from "@/components/WhatChanged";
 import { StatTile } from "@/components/StatTile";
 import { shareCardHref } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
@@ -150,6 +151,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
             <p className="text-sm leading-relaxed text-ink-2">{forecast.reasoning}</p>
           </div>
 
+          <WhatChanged questionId={detail.id} />
           <AnalogsPanel reports={detail.agent_reports} />
           <SensitivityPanel questionId={detail.id} />
           <RelatedQuestions questionId={detail.id} />
