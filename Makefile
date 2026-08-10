@@ -1,4 +1,4 @@
-.PHONY: dev-api dev-web test lint smoke snapshot static demo docker verify
+.PHONY: dev-api dev-web test lint smoke snapshot static demo docker verify e2e
 
 # The full pre-push gate: lint, tests, live build, static build
 verify: lint test
@@ -37,3 +37,6 @@ static: snapshot
 
 docker:
 	docker compose up --build
+
+e2e: static
+	cd frontend && npx playwright test
