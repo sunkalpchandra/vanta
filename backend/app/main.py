@@ -1,9 +1,11 @@
 import time
+from collections import deque
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .db import Base, SessionLocal, engine
@@ -47,6 +49,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+# Sliding-window limiter for mutating requests. In-memory and per-process —
+# honest scope: a demo-grade guard against runaway clients, not DDoS armor.
+_rate_buckets: dict[str, deque] = {}
+
+
+@app.middleware("http")
+async def rate_limit_mutations(request: Request, call_next):
+    limit = getattr(app.state, "rate_limit_per_minute", None)
+    if limit is None:
+        limit = get_settings().rate_limit_per_minute
+    if limit and request.method in {"POST", "DELETE"} and request.url.path.startswith("/api"):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        bucket = _rate_buckets.setdefault(client_ip, deque())
+        while bucket and now - bucket[0] > 60:
+            bucket.popleft()
+        if len(bucket) >= limit:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "rate limit exceeded; slow down"},
+                headers={"Retry-After": "60"},
+            )
+        bucket.append(now)
+    return await call_next(request)
 
 
 @app.middleware("http")
