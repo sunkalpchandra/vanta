@@ -49,7 +49,7 @@ class SynthesisAgent(Agent):
             f"{'an edge of ' + format(edge, '+.0%') + ' versus' if abs(edge) >= 0.02 else 'in line with'} "
             f"the market at {ctx.market_probability:.0%}."
         )
-        reasoning = narrate(
+        reasoning = fallback if not ctx.narratives else narrate(
             system=(
                 "You are the Synthesis Agent of a forecasting intelligence system. Write a crisp 2-4 sentence "
                 "final rationale for the given probability. Mention the strongest driver and the main caveat. "

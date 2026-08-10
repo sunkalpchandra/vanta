@@ -57,7 +57,7 @@ class SkepticAgent(Agent):
             f"({interim:.0%} vs {ctx.market_probability:.0%}) — before trusting that edge, weigh: "
             + " ".join(risks[:2])
         )
-        argument = narrate(
+        argument = fallback if not ctx.narratives else narrate(
             system=(
                 "You are the Skeptic Agent in a forecasting system. In 2-3 sentences, attack the "
                 "consensus estimate: hidden assumptions, missing information, model weaknesses. No preamble."

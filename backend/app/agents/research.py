@@ -19,7 +19,7 @@ class ResearchAgent(Agent):
         stance = "bull" if tilt > 0.08 else "bear" if tilt < -0.08 else "neutral"
 
         fallback = self._template_argument(positive, negative, tilt)
-        argument = narrate(
+        argument = fallback if not ctx.narratives else narrate(
             system=(
                 "You are the Research Agent of a forecasting intelligence system. "
                 "Write a tight 2-3 sentence evidence assessment. No preamble."
