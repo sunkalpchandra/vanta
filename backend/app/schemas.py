@@ -133,6 +133,16 @@ class StatsOut(BaseModel):
     llm_narratives: bool
 
 
+class BacktestOut(BaseModel):
+    n_events: int
+    n_covered: int
+    coverage: float
+    accuracy: float | None
+    brier: float | None
+    log_score: float | None
+    baseline_brier: float
+
+
 class AgentLeaderboardRow(BaseModel):
     agent: str
     n_resolved: int
@@ -184,6 +194,13 @@ class EvidenceIn(BaseModel):
 class DiscoveredQuestion(BaseModel):
     question: QuestionOut
     rationale: str
+
+
+class WatchlistIn(BaseModel):
+    question: str = Field(min_length=10, max_length=500)
+    category: Category = "technology"
+    horizon_days: int = Field(default=90, ge=1, le=1000)
+    rationale: str = Field(default="", max_length=500)
 
 
 class AskRequest(BaseModel):
