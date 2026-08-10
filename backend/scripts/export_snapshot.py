@@ -152,6 +152,12 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         traders_resp.json() if traders_resp.status_code == 200 else {"traders": []},
     )
 
+    # Market-surface stats + biggest movers.
+    stats_resp = client.get("/api/market-stats")
+    dump(data / "market-stats.json", stats_resp.json() if stats_resp.status_code == 200 else None)
+    movers_resp = client.get("/api/market-stats/movers?window_hours=24&limit=20")
+    dump(data / "market-movers.json", movers_resp.json() if movers_resp.status_code == 200 else [])
+
     # Public activity tape — recent trades across all traders (bots included).
     activity_resp = client.get("/api/activity/trades?limit=30")
     dump(
@@ -166,6 +172,13 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     for event_id in sampled_ids:
         resp = client.get(f"/api/markets/{event_id}/history")
         dump(data / "market-price" / f"{event_id}.json", resp.json() if resp.status_code == 200 else {"points": []})
+
+    # vanta's forecast for each ACTIVE sampled market — the detail page's
+    # "vanta's take" section, real in the static demo (deterministic pipeline).
+    (data / "market-forecast").mkdir(parents=True, exist_ok=True)
+    for m in active_items:
+        resp = client.get(f"/api/markets/{m['id']}/forecast")
+        dump(data / "market-forecast" / f"{m['id']}.json", resp.json() if resp.status_code == 200 else None)
 
     dump(
         data / "meta.json",

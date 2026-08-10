@@ -41,6 +41,8 @@ DATA_TS_SNAPSHOT_NAMES = [
     "markets-sample",
     "traders",
     "activity",
+    "market-stats",
+    "market-movers",
 ]
 
 
