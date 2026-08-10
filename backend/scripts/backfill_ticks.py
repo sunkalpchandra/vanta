@@ -47,9 +47,19 @@ def main() -> int:
             .limit(args.max_events)
             .all()
         )
+        # The live sync writes one recent tick per active event, so "has any
+        # tick" would skip everything. Gate on HISTORICAL data instead: skip
+        # only events that already have a tick older than the live-sync window.
+        from datetime import timedelta
+
+        history_cutoff = datetime.now(UTC) - timedelta(hours=2)
         for i, event in enumerate(events, 1):
-            if db.query(PriceTick).filter(PriceTick.event_id == event.id).first():
-                continue  # already has history
+            if (
+                db.query(PriceTick)
+                .filter(PriceTick.event_id == event.id, PriceTick.timestamp < history_cutoff)
+                .first()
+            ):
+                continue  # already backfilled with venue history
             tokens = (event.raw or {}).get("clobTokenIds") or []
             if not tokens:
                 continue
