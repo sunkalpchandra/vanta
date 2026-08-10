@@ -87,6 +87,15 @@ default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-li
 | `GET /api/agents/{name}/records` · `/calibration` | One agent's frozen calls and its reliability bins. |
 | `GET /metrics` | Per-route request counters (Prometheus text). |
 
+## Real-market backtest & chat
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/backtest/real?horizon=7\|30&category=` | Leakage-free scorecard over ingested Polymarket/Kalshi events: vanta vs market vs no-skill benchmark, with coverage and per-source counts. `404` until ingest + a run exist. |
+| `GET /api/backtest/real/calibration?horizon=` | Calibration bins for the real backtest. |
+| `POST /api/backtest/run?horizon=&limit=` | Score unscored resolved events (operator-gated; synchronous, `limit` ≤ 5000). |
+| `POST /api/chat` | SSE reasoning stream: `status` → per-agent `agent_start`/`agent_report` → `evidence` → `related` → `forecast` → `done`. Matched questions replay read-only; creating a new question honors operator gating. |
+
 ## Meta
 
 | Endpoint | Description |
