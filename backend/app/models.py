@@ -142,6 +142,55 @@ class AgentTrackRecord(Base):
     resolved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class MarketEvent(Base):
+    """A real market ingested from an external venue (Polymarket, Kalshi).
+    This is the backtest corpus — deliberately separate from `questions`
+    (the curated product surface) so 100k rows can't wreck feed queries or
+    the static export. Prices are probabilities of YES in [0,1]."""
+
+    __tablename__ = "market_events"
+    __table_args__ = (
+        Index("ix_market_events_source_id", "source", "source_id", unique=True),
+        Index("ix_market_events_resolved_close", "outcome", "close_time"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(20), index=True)  # polymarket | kalshi
+    source_id: Mapped[str] = mapped_column(String(120))
+    question: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(String(50), index=True)  # normalized, may be "other"
+    close_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outcome: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 1 YES, 0 NO, NULL unresolved
+    volume_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    final_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Pre-resolution snapshots — the leakage-free backtest inputs. NULL until
+    # the price-history stage fills them (a separate, slower pass).
+    price_7d: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price_30d: Mapped[float | None] = mapped_column(Float, nullable=True)
+    raw: Mapped[dict] = mapped_column(JSON, default=dict)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class BacktestPrediction(Base):
+    """One leakage-free pipeline run against a resolved MarketEvent: the quant
+    pipeline saw ONLY the market price h days before close (plus category
+    base rates learned from OTHER events). Scored against the same-time
+    market price, so vanta and the market compete on identical information."""
+
+    __tablename__ = "backtest_predictions"
+    __table_args__ = (
+        Index("ix_backtest_event_horizon", "event_id", "horizon_days", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    horizon_days: Mapped[int] = mapped_column(Integer)  # 7 or 30
+    market_probability: Mapped[float] = mapped_column(Float)  # price at T-h
+    vanta_probability: Mapped[float] = mapped_column(Float)
+    outcome: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Prediction(Base):
     """Resolved historical predictions — powers the accuracy leaderboard."""
 
