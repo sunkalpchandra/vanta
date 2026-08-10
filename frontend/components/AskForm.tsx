@@ -3,10 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { CATEGORIES } from "@/lib/categories";
 import { IS_STATIC } from "@/lib/config";
 import type { QuestionDetail } from "@/lib/types";
-
-const CATEGORIES = ["technology", "finance", "politics", "science", "sports", "crypto"];
 
 export function AskForm() {
   if (IS_STATIC) {

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FeedExplorer } from "@/components/FeedExplorer";
 import { StatTile } from "@/components/StatTile";
+import { CATEGORIES } from "@/lib/categories";
 import { IS_STATIC } from "@/lib/config";
 import { getCategories, getFeed, getLeaderboard } from "@/lib/data";
 import { pct } from "@/lib/format";
 
-const KNOWN = ["technology", "finance", "politics", "science", "sports", "crypto"];
+const KNOWN: readonly string[] = CATEGORIES;
 
 export function generateStaticParams() {
   return IS_STATIC ? KNOWN.map((slug) => ({ slug })) : [];
