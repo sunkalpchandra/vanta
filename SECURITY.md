@@ -5,7 +5,7 @@ accordingly:
 
 - **Auth is opt-in, off by default.** Operator mutations (resolve, market,
   evidence, refresh, discovery, watchlist writes) can be gated behind
-  `X-API-Key` by setting `REQUIRE_API_KEY=1` (register keys via
+  `X-API-Key` — including ask (it runs the full pipeline) and note writes — by setting `REQUIRE_API_KEY=1` (register keys via
   `POST /api/users`; keys are stored in plaintext — treat the DB as sensitive).
   Reads and `POST /api/questions` stay open, and a sliding-window rate limit
   (`RATE_LIMIT_PER_MINUTE`, per-process) guards all mutations. This is
