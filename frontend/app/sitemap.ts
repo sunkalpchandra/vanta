@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/archive/` },
     { url: `${base}/methodology/` },
     { url: `${base}/ask/` },
+    { url: `${base}/digest/` },
     ...CATEGORIES.map((slug) => ({ url: `${base}/category/${slug}/` })),
     ...questions.map((q) => ({ url: `${base}/questions/${q.id}/` })),
   ];
