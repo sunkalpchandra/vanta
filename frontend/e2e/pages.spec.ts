@@ -58,11 +58,15 @@ test("leaderboard leads with the real-backtest section", async ({ page }) => {
   await expect(page.getByText(/synthetic demo corpus below/i)).toBeVisible();
 });
 
-test("markets page lists real events with prices and the play-money label", async ({ page }) => {
+test("markets page shows real events or the honest empty state", async ({ page }) => {
   await page.goto("markets/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/markets/i);
   await expect(page.getByText(/play money/i).first()).toBeVisible();
-  await expect(page.getByText(/%/).first()).toBeVisible();
+  // CI's deterministic bake carries no synced events (sync runs only in the
+  // Pages workflow) — the page must show prices OR its honest empty state.
+  await expect(
+    page.getByText(/%/).first().or(page.getByText(/no markets|sample of the live corpus/i).first()),
+  ).toBeVisible();
 });
 
 test("portfolio shows the static-mode honest state", async ({ page }) => {
