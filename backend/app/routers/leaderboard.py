@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Prediction
-from ..schemas import LeaderboardRow
+from ..quant.scoring import calibration_bins
+from ..schemas import CalibrationBinOut, LeaderboardRow
 
 router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
 
@@ -41,3 +42,24 @@ def leaderboard(db: Session = Depends(get_db)):
     ]
     out.sort(key=lambda r: r.vanta_accuracy, reverse=True)
     return out
+
+
+@router.get("/calibration", response_model=list[CalibrationBinOut])
+def calibration(db: Session = Depends(get_db)):
+    """Reliability-diagram bins for vanta vs the market over resolved questions.
+    A calibrated forecaster's observed rates track its predicted rates."""
+    predictions = db.scalars(select(Prediction)).all()
+    vanta = calibration_bins([(p.vanta_probability, p.outcome) for p in predictions])
+    market = calibration_bins([(p.market_probability, p.outcome) for p in predictions])
+    return [
+        CalibrationBinOut(
+            mid=v.mid,
+            vanta_mean_predicted=v.mean_predicted,
+            vanta_observed_rate=v.observed_rate,
+            vanta_count=v.count,
+            market_mean_predicted=m.mean_predicted,
+            market_observed_rate=m.observed_rate,
+            market_count=m.count,
+        )
+        for v, m in zip(vanta, market, strict=True)
+    ]
