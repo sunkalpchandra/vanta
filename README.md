@@ -121,9 +121,15 @@ All variables are optional. Backend settings live in `backend/.env`; frontend se
 | `GET /api/questions/{id}` | Question + latest forecast + evidence + agent debate |
 | `GET /api/questions/{id}/history` | Probability time series |
 | `POST /api/questions/{id}/refresh` | Re-run the agent pipeline |
-| `GET /api/leaderboard` | Accuracy + Brier by category |
+| `POST /api/questions/{id}/evidence` | Ingest a signal, re-forecast immediately |
+| `POST /api/questions/{id}/resolve` | Settle against reality; writes the track record |
+| `GET /api/leaderboard` · `/calibration` · `/predictions` | Accuracy + Brier by category · reliability bins · resolved track record |
+| `GET /api/stats` · `GET /api/categories` | System-level track record · coverage + base rates |
 | `GET /api/brief` | Morning brief (top mispricings) |
+| `GET /api/discover/candidates` · `POST /api/discover` | Autonomous research mode |
 | `GET /api/cards/{id}.svg` | Shareable prediction card |
+
+Full reference: [docs/API.md](docs/API.md).
 
 ## Tests
 
