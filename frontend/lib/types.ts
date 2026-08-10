@@ -29,6 +29,8 @@ export interface QuestionOut {
   market_probability: number;
   market_volume_usd: number;
   market_liquidity: string;
+  resolved: boolean;
+  outcome: number | null;
   created_at: string;
 }
 
@@ -62,6 +64,34 @@ export interface LeaderboardRow {
   market_accuracy: number;
   vanta_brier: number;
   market_brier: number;
+}
+
+export interface StatsOut {
+  n_live_questions: number;
+  n_resolved: number;
+  vanta_accuracy: number | null;
+  market_accuracy: number | null;
+  vanta_brier: number | null;
+  market_brier: number | null;
+  avg_abs_edge: number | null;
+  llm_narratives: boolean;
+}
+
+export interface CategoryOut {
+  category: string;
+  base_rate: number;
+  n_live_questions: number;
+  n_resolved: number;
+}
+
+export interface CalibrationBin {
+  mid: number;
+  vanta_mean_predicted: number | null;
+  vanta_observed_rate: number | null;
+  vanta_count: number;
+  market_mean_predicted: number | null;
+  market_observed_rate: number | null;
+  market_count: number;
 }
 
 export interface BriefItem {
