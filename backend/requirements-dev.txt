@@ -1,3 +1,4 @@
 # Development-only tools, pinned for reproducible CI lint results.
 ruff==0.16.2
 hypothesis==6.151.4
+pytest-cov==7.0.0
