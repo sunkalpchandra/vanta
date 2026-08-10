@@ -3,6 +3,10 @@ name: deploy-pages
 on:
   push:
     branches: [main]
+  schedule:
+    # Re-bake the static demo every 6 hours so the deployed snapshot carries
+    # current active markets and fresh venue prices, not just push-time state.
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -24,12 +28,42 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+      - name: Install backend
+        run: pip install -r backend/requirements.txt
+      # The exporter normally creates its own throwaway temp DB (it overwrites
+      # DATABASE_URL inside the script), which the market sync could never
+      # reach. So the bake DB is built here in the workspace instead: seed it,
+      # let the sync land fresh active markets in it, then export from it.
+      - name: Seed bake database
+        env:
+          DATABASE_URL: sqlite:///${{ runner.temp }}/bake.db
+        run: |
+          python - <<'PY'
+          import sys
+
+          sys.path.insert(0, "backend")
+          from app.db import Base, SessionLocal, engine
+          from app.seed import seed_if_empty
+
+          Base.metadata.create_all(bind=engine)
+          with SessionLocal() as db:
+              seed_if_empty(db)
+          PY
+      - name: Sync live markets into bake DB
+        # Best-effort by design: a venue API hiccup must never block a deploy.
+        # On failure the snapshot simply ships the deterministic seed.
+        run: |
+          python backend/scripts/sync_markets.py \
+            --db "$RUNNER_TEMP/bake.db" \
+            --polymarket-pages 20 --kalshi-pages 2 || true
       - name: Bake API snapshot
         env:
           GIT_SHA: ${{ github.sha }}
-        run: |
-          pip install -r backend/requirements.txt
-          python backend/scripts/export_snapshot.py --out frontend/public
+          DATABASE_URL: sqlite:///${{ runner.temp }}/bake.db
+        # The exporter honors a pre-set DATABASE_URL (and only mints its own
+        # temp DB when none is set) — so this bakes from the seeded +
+        # market-synced workspace DB above.
+        run: python backend/scripts/export_snapshot.py --out frontend/public
       - uses: actions/setup-node@v4
         with:
           node-version: 22
