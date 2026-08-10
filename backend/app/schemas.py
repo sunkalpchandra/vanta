@@ -201,6 +201,23 @@ class EvidenceIn(BaseModel):
     impact: float = Field(ge=0.0, le=1.0)
 
 
+class RelatedQuestion(BaseModel):
+    id: int
+    question: str
+    category: str
+    similarity: float
+    resolved: bool
+
+
+class AlertItem(BaseModel):
+    kind: Literal["edge", "move"]
+    question_id: int
+    question: str
+    category: str
+    value: float  # the edge, or the move delta
+    detail: str
+
+
 class DiscoveredQuestion(BaseModel):
     question: QuestionOut
     rationale: str
