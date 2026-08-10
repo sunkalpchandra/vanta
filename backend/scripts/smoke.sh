@@ -16,6 +16,7 @@ check() {
 }
 
 check /api/health
+check /api/meta
 check /api/feed
 check /api/questions
 check /api/brief
