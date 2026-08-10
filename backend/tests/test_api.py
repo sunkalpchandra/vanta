@@ -91,6 +91,18 @@ def test_missing_question_404(client):
     assert client.get("/api/questions/99999").status_code == 404
 
 
+def test_request_id_on_every_response(client):
+    assert len(client.get("/api/stats").headers["x-request-id"]) >= 8
+    echoed = client.get("/api/stats", headers={"X-Request-Id": "trace-me-123"})
+    assert echoed.headers["x-request-id"] == "trace-me-123"
+
+
+def test_difficulty_in_detail(client):
+    qid = client.get("/api/questions").json()[-1]["id"]
+    detail = client.get(f"/api/questions/{qid}").json()
+    assert 1 <= detail["difficulty"] <= 5
+
+
 def test_evidence_carries_spread_timestamps(client):
     """Seeded evidence arrival dates are spread over past weeks and serialized
     as zone-qualified UTC."""
