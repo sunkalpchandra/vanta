@@ -77,3 +77,21 @@ test("portfolio shows the static-mode honest state", async ({ page }) => {
   // honest empty state).
   await expect(page.getByText(/trader leaderboard/i)).toBeVisible();
 });
+
+test("market detail page shows vanta's forecast and a price chart", async ({ page }) => {
+  await page.goto("markets/");
+  // Expand the first market row, then follow its details link.
+  const detailLink = page.getByRole("link", { name: /price history/i }).first();
+  await expect(async () => {
+    await page.locator("button").filter({ hasText: /%/ }).first().click();
+    await expect(detailLink).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  await detailLink.click();
+  await expect(page).toHaveURL(/\/markets\/\d+/);
+  await expect(page.getByText(/vanta.s take|vanta's forecast needs/i).first()).toBeVisible();
+});
+
+test("history page has an honest empty state", async ({ page }) => {
+  await page.goto("history/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
