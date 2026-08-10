@@ -13,15 +13,18 @@ export function FeedExplorer({
 }) {
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"edge" | "confidence">("edge");
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(cards.map((c) => c.category))).sort()],
     [cards],
   );
-  const visible = cards.filter(
-    (c) =>
-      (category === "all" || c.category === category) &&
-      (!query.trim() || c.question.toLowerCase().includes(query.trim().toLowerCase())),
-  );
+  const visible = cards
+    .filter(
+      (c) =>
+        (category === "all" || c.category === category) &&
+        (!query.trim() || c.question.toLowerCase().includes(query.trim().toLowerCase())),
+    )
+    .sort((a, b) => (sort === "edge" ? Math.abs(b.edge) - Math.abs(a.edge) : b.confidence - a.confidence));
 
   return (
     <div>
@@ -42,14 +45,25 @@ export function FeedExplorer({
             </button>
           ))}
         </div>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search questions…"
-          aria-label="Search questions"
-          className="ml-auto w-full rounded-full border border-line bg-surface-2 px-4 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus:border-accent sm:w-56"
-        />
+        <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as "edge" | "confidence")}
+            aria-label="Sort feed"
+            className="micro-label rounded-full border border-line bg-surface-2 px-3 py-1.5 !text-ink-2 outline-none focus:border-accent"
+          >
+            <option value="edge">by edge</option>
+            <option value="confidence">by confidence</option>
+          </select>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search questions…"
+            aria-label="Search questions"
+            className="w-full rounded-full border border-line bg-surface-2 px-4 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus:border-accent sm:w-52"
+          />
+        </div>
       </div>
       {visible.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">No live questions match.</div>
