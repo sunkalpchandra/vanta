@@ -220,4 +220,6 @@ export type RealBacktestOut = {
   outcome_base_rate: number | null;
   sources: Record<string, number>;
   median_volume_usd: number | null;
+  frozen?: boolean; // served from the committed artifact, not a live DB
+  computed_at?: string;
 };

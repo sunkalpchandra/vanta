@@ -33,6 +33,9 @@ export function RealBacktestCard({ result }: { result: RealBacktestOut | null })
           {src}
         </span>
         <span className="micro-label ml-auto">
+          {result.frozen && result.computed_at
+            ? `frozen run · computed ${result.computed_at.slice(0, 10)} · `
+            : ""}
           coverage {pct(result.coverage)} of resolved corpus
         </span>
       </div>
