@@ -40,7 +40,10 @@ Everything runs offline; nothing may depend on `ANTHROPIC_API_KEY` being set.
 The suite database binds once in `tests/conftest.py` — later modules must
 tolerate earlier modules' writes.
 
-Shortcuts: `make test`, `make lint`, and `backend/scripts/smoke.sh` (curls
+Frontend logic tests: `cd frontend && npx vitest run` (pure modules in `lib/`).
+Backend coverage is gated at 85% in CI (`pytest --cov=app`).
+
+Shortcuts: `make test`, `make lint`, `make bench`, and `backend/scripts/smoke.sh` (curls
 every endpoint against a running backend). `make static` reproduces the
 GitHub Pages build locally.
 
