@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     vanta_model: str = "claude-opus-5"
     frontend_origin: str = "http://localhost:3000"
+    # Mutating requests per client per minute; 0 disables limiting.
+    rate_limit_per_minute: int = 240
 
 
 @lru_cache
