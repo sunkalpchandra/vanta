@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import type { HistoryPoint, MarketPoint } from "@/lib/types";
+import { evidenceTicksFor, mergeDaySeries, needsDots } from "@/lib/chartData";
 import { shortDate } from "@/lib/format";
 
 const INK_MUTED = "#5c6675";
@@ -57,37 +58,8 @@ export function ProbabilityChart({
   marketHistory: MarketPoint[];
   evidenceDates?: string[];
 }) {
-  const byDay = new Map<string, { timestamp: string; vanta?: number; market?: number }>();
-  const dayKey = (iso: string) => iso.slice(0, 10);
-  for (const point of history) {
-    const key = dayKey(point.timestamp);
-    byDay.set(key, {
-      ...(byDay.get(key) ?? { timestamp: point.timestamp }),
-      vanta: +(point.probability * 100).toFixed(1),
-    });
-  }
-  for (const point of marketHistory) {
-    const key = dayKey(point.timestamp);
-    byDay.set(key, {
-      ...(byDay.get(key) ?? { timestamp: point.timestamp }),
-      market: +(point.probability * 100).toFixed(1),
-    });
-  }
-  const data = Array.from(byDay.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-  // A one-point line is invisible (zero-length path) — show dots for sparse
-  // series so single-forecast questions (e.g. freshly discovered) still render.
-  const vantaCount = data.filter((d) => d.vanta != null).length;
-  const marketCount = data.filter((d) => d.market != null).length;
-
-  // Evidence arrivals mapped onto the chart's own day buckets (category axis:
-  // a ReferenceLine x must equal an existing data point's key).
-  const evidenceTicks = Array.from(
-    new Set(
-      evidenceDates
-        .map((iso) => byDay.get(dayKey(iso))?.timestamp)
-        .filter((t): t is string => Boolean(t)),
-    ),
-  );
+  const data = mergeDaySeries(history, marketHistory);
+  const evidenceTicks = evidenceTicksFor(evidenceDates, data);
 
   return (
     <div className="h-56 w-full">
@@ -132,7 +104,7 @@ export function ProbabilityChart({
             strokeWidth={2}
             strokeDasharray="7 3"
             connectNulls
-            dot={marketCount < 3 ? { r: 3, fill: MARKET, strokeWidth: 0 } : false}
+            dot={needsDots(data, "market") ? { r: 3, fill: MARKET, strokeWidth: 0 } : false}
             activeDot={{ r: 4, fill: MARKET, stroke: "#0f131b", strokeWidth: 2 }}
           />
           <Line
@@ -142,7 +114,7 @@ export function ProbabilityChart({
             stroke={VANTA}
             strokeWidth={2}
             connectNulls
-            dot={vantaCount < 3 ? { r: 3, fill: VANTA, strokeWidth: 0 } : false}
+            dot={needsDots(data, "vanta") ? { r: 3, fill: VANTA, strokeWidth: 0 } : false}
             activeDot={{ r: 4, fill: VANTA, stroke: "#0f131b", strokeWidth: 2 }}
           />
         </LineChart>
