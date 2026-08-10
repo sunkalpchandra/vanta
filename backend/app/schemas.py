@@ -133,6 +133,14 @@ class StatsOut(BaseModel):
     llm_narratives: bool
 
 
+class AgentLeaderboardRow(BaseModel):
+    agent: str
+    n_resolved: int
+    accuracy: float
+    brier: float
+    log_score: float
+
+
 class CategoryOut(BaseModel):
     category: str
     base_rate: float
