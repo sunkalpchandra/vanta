@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Planned
+
+- Live prediction-market and news ingest replacing the seeded corpus.
+
+## [0.2.0] - 2026-08-10
+
 ### Added
 
 - Performance: constant-query feed/movers (was N+1), composite forecast index,
@@ -89,10 +95,6 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Brief RSS feed (`/api/brief/rss`, baked as `brief.xml` in the demo);
   robots.txt + sitemap; per-question og:image share cards;
   prefers-reduced-motion support.
-
-### Planned
-
-- Live prediction-market and news ingest replacing the seeded corpus.
 
 ## [0.1.0] - 2026-08-10
 
