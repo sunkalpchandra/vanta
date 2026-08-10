@@ -104,6 +104,7 @@ def _event_stream(question_id: int, status: dict, store: bool) -> Iterator[str]:
     with SessionLocal() as db:
         question = db.get(Question, question_id)
         yield _sse("status", status)
+        completed = False
         try:
             reports: list[dict] = []
             forecast: dict | None = None
@@ -138,6 +139,7 @@ def _event_stream(question_id: int, status: dict, store: bool) -> Iterator[str]:
                         "edge": round(forecast["probability"] - question.market_probability, 4),
                     },
                 )
+            completed = True
             yield _sse(
                 "done",
                 {
@@ -149,6 +151,16 @@ def _event_stream(question_id: int, status: dict, store: bool) -> Iterator[str]:
         except Exception:  # headers are already sent; a typed event beats a dead socket
             yield _sse("error", {"detail": "pipeline failed mid-stream", "message": "pipeline failed mid-stream"})
             raise
+        finally:
+            if store and not completed:
+                # Client vanished (GeneratorExit) or the pipeline died before
+                # the run was stored: a forecast-less question would fuzzy-match
+                # every future re-ask and block a clean retry. Remove it.
+                db.rollback()
+                orphan = db.get(Question, question_id)
+                if orphan is not None and not orphan.forecasts:
+                    db.delete(orphan)
+                    db.commit()
 
 
 @router.post("")
@@ -167,6 +179,7 @@ def chat(
         question_id = matched.id
         status = {
             "mode": "matched",
+            "matched": True,  # ChatConsole reads the boolean
             "question_id": matched.id,
             "question": matched.question,
             "similarity": round(score, 3),
@@ -189,6 +202,7 @@ def chat(
         question_id = question.id
         status = {
             "mode": "created",
+            "matched": False,
             "question_id": question.id,
             "question": question.question,
             "similarity": None,
