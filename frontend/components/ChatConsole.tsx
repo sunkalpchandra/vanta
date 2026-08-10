@@ -127,7 +127,11 @@ function LiveChatConsole() {
       }
     } catch (err) {
       if (controller.signal.aborted) return; // superseded or unmounted, not a failure
-      setErrorMsg(err instanceof Error && err.message ? err.message : "chat request failed");
+      // A typed server `error` event is followed by an abrupt close that
+      // throws in reader.read() — the server's message beats the generic one.
+      setErrorMsg(
+        streamError ?? (err instanceof Error && err.message ? err.message : "chat request failed"),
+      );
       setPhase("error");
     }
   }
