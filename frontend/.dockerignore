@@ -1,0 +1,7 @@
+node_modules
+.next
+out
+.env
+.env.*
+Dockerfile
+npm-debug.log*

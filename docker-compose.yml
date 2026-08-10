@@ -10,10 +10,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vanta"]
+      # -h forces TCP: during first-boot initdb, postgres runs a socket-only
+      # temp server that a bare pg_isready would report as healthy too early.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U vanta -d vanta"]
       interval: 3s
       timeout: 3s
       retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -22,6 +25,7 @@ services:
 
   api:
     build: ./backend
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://vanta:vanta@db:5432/vanta
       REDIS_URL: redis://redis:6379/0
@@ -37,7 +41,12 @@ services:
     build:
       context: ./frontend
       args:
+        # What the *browser* uses (AskForm, share-card links) — host-published port.
         NEXT_PUBLIC_API_URL: http://localhost:8000
+    environment:
+      # What SSR inside this container uses — localhost:8000 here would point
+      # at the web container itself and render every page empty.
+      API_URL_INTERNAL: http://api:8000
     ports:
       - "3000:3000"
     depends_on:

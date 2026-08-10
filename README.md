@@ -72,7 +72,9 @@ docker compose up --build
 
 ## Configuration
 
-Copy `.env.example` to `backend/.env` (all optional):
+All variables are optional. Backend settings live in `backend/.env`; frontend settings live in `frontend/.env.local` (Next.js does not read `backend/.env`).
+
+**`backend/.env`:**
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -81,7 +83,13 @@ Copy `.env.example` to `backend/.env` (all optional):
 | `ANTHROPIC_API_KEY` | *(unset)* | Enables Claude-written agent narratives |
 | `VANTA_MODEL` | `claude-opus-5` | Model for narratives |
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Frontend → API base URL |
+
+**`frontend/.env.local`:**
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | API base URL for the browser (client fetches, share links) |
+| `API_URL_INTERNAL` | *(falls back to public URL)* | API base URL for SSR — set when the server reaches the API by a different route than the browser (compose sets `http://api:8000`) |
 
 ## API surface
 
