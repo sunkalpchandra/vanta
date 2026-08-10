@@ -3,8 +3,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Forecast, Question
-from ..schemas import AskRequest, ForecastOut, HistoryPoint, QuestionDetail, QuestionOut, ResolveRequest
+from ..models import Evidence, Forecast, Question
+from ..schemas import (
+    AskRequest,
+    EvidenceIn,
+    ForecastOut,
+    HistoryPoint,
+    QuestionDetail,
+    QuestionOut,
+    ResolveRequest,
+)
 from ..service import ResolutionError, create_question, resolve_question, run_and_store_forecast
 
 router = APIRouter(prefix="/api/questions", tags=["questions"])
@@ -71,6 +79,28 @@ def resolve(question_id: int, body: ResolveRequest, db: Session = Depends(get_db
         resolve_question(db, question, body.outcome)
     except ResolutionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _detail(db, question)
+
+
+@router.post("/{question_id}/evidence", response_model=QuestionDetail, status_code=201)
+def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_db)):
+    """Ingest a new signal for a question and re-run the agent pipeline so the
+    forecast reflects it immediately."""
+    question = _get_question_or_404(db, question_id)
+    if question.resolved:
+        raise HTTPException(status_code=409, detail="question is resolved; evidence is frozen")
+    db.add(
+        Evidence(
+            question_id=question.id,
+            source=body.source,
+            summary=body.summary,
+            sentiment=body.sentiment,
+            impact=body.impact,
+        )
+    )
+    db.commit()
+    db.refresh(question)
+    run_and_store_forecast(db, question)
     return _detail(db, question)
 
 
