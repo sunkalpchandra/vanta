@@ -1,7 +1,5 @@
-import { FeedCardItem } from "@/components/FeedCardItem";
-import { getFeed } from "@/lib/api";
-
-export const dynamic = "force-dynamic";
+import { FeedExplorer } from "@/components/FeedExplorer";
+import { getFeed } from "@/lib/data";
 
 export default async function FeedPage() {
   const feed = await getFeed();
@@ -19,11 +17,7 @@ export default async function FeedPage() {
           and refresh — it seeds itself on first boot.
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {feed.map((card, i) => (
-            <FeedCardItem key={card.question_id} card={card} index={i} />
-          ))}
-        </div>
+        <FeedExplorer cards={feed} />
       )}
     </div>
   );
