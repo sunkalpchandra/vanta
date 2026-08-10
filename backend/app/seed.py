@@ -19,6 +19,8 @@ from .service import ResolutionError, create_question, resolve_question, run_and
 # Two seeded questions resolve at seed time so the archive, the resolved
 # filters, and the agent leaderboard have live-path content in the demo.
 # Outcomes are fixtures, chosen to match the corpus's own base rates.
+BACKFILL_REASONING = "(historical snapshot)"
+
 DEMO_RESOLUTIONS: list[tuple[str, bool]] = [
     ("Will the favorite win the NBA championship this season?", False),
     ("Will SpaceX land Starship's upper stage back at the launch site this year?", True),
@@ -71,6 +73,19 @@ def _seed_questions(db: Session) -> bool:
             if not _has_market_history(db, question):
                 _backfill_market_history(db, question)  # upgraded/interrupted DBs
                 changed = True
+            if not _has_backfill(db, question):
+                # Crash after the live-forecast commit but before the backfill
+                # commit: finish the vanta side too.
+                live = db.scalar(
+                    select(Forecast)
+                    .where(Forecast.question_id == question.id)
+                    .order_by(Forecast.timestamp.desc(), Forecast.id.desc())
+                    .limit(1)
+                )
+                _backfill_history(db, question, live)
+                _spread_evidence_dates(db, question)
+                changed = True
+            db.commit()
             continue  # fully seeded on an earlier boot
         else:
             # Crash landed between the question commit and the forecast
@@ -80,7 +95,7 @@ def _seed_questions(db: Session) -> bool:
         _backfill_history(db, question, forecast)
         _backfill_market_history(db, question)
         _spread_evidence_dates(db, question)
-    db.commit()
+        db.commit()  # per-question: shrink the crash window to one pipeline run
     return changed
 
 
@@ -95,6 +110,17 @@ def _spread_evidence_dates(db: Session, question: Question, max_age_days: int = 
 
 def _has_forecast(db: Session, question: Question) -> bool:
     return db.scalar(select(Forecast).where(Forecast.question_id == question.id).limit(1)) is not None
+
+
+def _has_backfill(db: Session, question: Question) -> bool:
+    return (
+        db.scalar(
+            select(Forecast)
+            .where(Forecast.question_id == question.id, Forecast.reasoning == BACKFILL_REASONING)
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def _has_market_history(db: Session, question: Question) -> bool:
@@ -120,7 +146,7 @@ def _backfill_history(db: Session, question: Question, forecast: Forecast, days:
                 question_id=question.id,
                 probability=round(clamp(p, 0.02, 0.98), 4),
                 confidence=forecast.confidence,
-                reasoning="(historical snapshot)",
+                reasoning=BACKFILL_REASONING,
                 risk_factors=[],
                 timestamp=now - timedelta(days=days - i),
             )
