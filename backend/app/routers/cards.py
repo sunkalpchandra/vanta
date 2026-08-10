@@ -43,6 +43,14 @@ def share_card(question_id: int, db: Session = Depends(get_db)):
 
     edge = forecast.probability - question.market_probability
     edge_color = "#34d399" if edge >= 0 else "#f87171"
+    resolved_stamp = ""
+    if question.resolved:
+        stamp_text = "RESOLVED YES" if question.outcome else "RESOLVED NO"
+        stamp_color = "#34d399" if question.outcome else "#f87171"
+        resolved_stamp = (
+            f'<rect x="556" y="40" width="184" height="34" rx="8" fill="none" stroke="{stamp_color}" stroke-width="1.5"/>'
+            f'<text x="648" y="62" text-anchor="middle" fill="{stamp_color}" font-family="ui-monospace,Menlo,monospace" font-size="14" letter-spacing="2">{stamp_text}</text>'
+        )
     title_lines = "".join(
         f'<tspan x="60" dy="{34 if i else 0}">{html.escape(line)}</tspan>'
         for i, line in enumerate(_wrap(question.question))
@@ -55,6 +63,7 @@ def share_card(question_id: int, db: Session = Depends(get_db)):
   </defs>
   <rect width="800" height="418" rx="24" fill="url(#bg)" stroke="#1f2937"/>
   <text x="60" y="64" fill="#6b7280" font-family="ui-monospace,Menlo,monospace" font-size="15" letter-spacing="4">VANTA · INTELLIGENCE</text>
+  {resolved_stamp}
   <text x="60" y="120" fill="#f9fafb" font-family="-apple-system,Segoe UI,sans-serif" font-size="26" font-weight="600">{title_lines}</text>
   <text x="60" y="268" fill="#6b7280" font-family="ui-monospace,Menlo,monospace" font-size="13" letter-spacing="2">MARKET</text>
   <text x="60" y="316" fill="#9ca3af" font-family="ui-monospace,Menlo,monospace" font-size="44" font-weight="700">{question.market_probability:.0%}</text>
