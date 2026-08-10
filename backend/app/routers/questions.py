@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..deps import require_operator
 from ..models import Evidence, Forecast, MarketSnapshot, Question
 from ..quant.analogs import tokenize
 from ..schemas import (
@@ -88,7 +89,7 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
     return _detail(db, _get_question_or_404(db, question_id))
 
 
-@router.post("/{question_id}/refresh", response_model=QuestionDetail)
+@router.post("/{question_id}/refresh", response_model=QuestionDetail, dependencies=[Depends(require_operator)])
 def refresh_forecast(question_id: int, db: Session = Depends(get_db)):
     question = _get_question_or_404(db, question_id)
     if question.resolved:
@@ -100,7 +101,7 @@ def refresh_forecast(question_id: int, db: Session = Depends(get_db)):
     return _detail(db, question)
 
 
-@router.post("/{question_id}/resolve", response_model=QuestionDetail)
+@router.post("/{question_id}/resolve", response_model=QuestionDetail, dependencies=[Depends(require_operator)])
 def resolve(question_id: int, body: ResolveRequest, db: Session = Depends(get_db)):
     """Settle the question against reality. Freezes forecasting and writes the
     resolved prediction that feeds the accuracy leaderboard."""
@@ -113,7 +114,12 @@ def resolve(question_id: int, body: ResolveRequest, db: Session = Depends(get_db
     return _detail(db, question)
 
 
-@router.post("/{question_id}/evidence", response_model=QuestionDetail, status_code=201)
+@router.post(
+    "/{question_id}/evidence",
+    response_model=QuestionDetail,
+    status_code=201,
+    dependencies=[Depends(require_operator)],
+)
 def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_db)):
     """Ingest a new signal for a question and re-run the agent pipeline so the
     forecast reflects it immediately."""
@@ -174,7 +180,7 @@ def sensitivity(question_id: int, db: Session = Depends(get_db)):
     return {"items": evidence_sensitivity(db, question)}
 
 
-@router.post("/{question_id}/market", response_model=QuestionDetail)
+@router.post("/{question_id}/market", response_model=QuestionDetail, dependencies=[Depends(require_operator)])
 def update_market_price(question_id: int, body: MarketUpdateRequest, db: Session = Depends(get_db)):
     """Ingest a new market price. Doesn't re-run the pipeline by itself —
     call /refresh afterwards if the move warrants a re-forecast."""
