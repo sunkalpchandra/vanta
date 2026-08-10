@@ -31,6 +31,7 @@ const AGENTS = [
 
 export const metadata = { title: "methodology — vanta" };
 
+import Link from "next/link";
 import { getBacktest } from "@/lib/data";
 
 export default async function MethodologyPage() {
@@ -91,8 +92,12 @@ export default async function MethodologyPage() {
           </p>
           <p>
             <strong className="text-ink">Scoring.</strong> Resolved questions are scored on
-            directional accuracy and Brier score, and binned into the calibration curve on the
-            accuracy page. Forecasts are only as good as their track record.
+            directional accuracy, Brier and log scores, and binned into the calibration curve on
+            the accuracy page. Each agent&apos;s own call is frozen at resolution and scored on the{" "}
+            <Link href="/agents" className="text-accent hover:underline">
+              agent leaderboard
+            </Link>
+            . Forecasts are only as good as their track record.
           </p>
         </div>
       </section>
