@@ -10,8 +10,8 @@ router = APIRouter(prefix="/api/feed", tags=["feed"])
 
 
 def latest_forecasts(db: Session) -> list[tuple[Question, Forecast]]:
-    """(question, latest forecast) pairs, one per question."""
-    questions = db.scalars(select(Question)).all()
+    """(question, latest forecast) pairs for live (unresolved) questions."""
+    questions = db.scalars(select(Question).where(Question.resolved.is_(False))).all()
     pairs: list[tuple[Question, Forecast]] = []
     for q in questions:
         latest = db.scalar(
