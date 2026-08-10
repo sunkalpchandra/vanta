@@ -65,3 +65,29 @@ def test_ask_is_gated_when_keys_required(client):
         assert client.post("/api/questions", json=body).status_code == 401
     finally:
         app.state.require_api_key = None
+
+
+def test_notes_crud(client):
+    qid = client.get("/api/questions").json()[-1]["id"]
+    body = {"body": "Resolution needs the official announcement, not a leak."}
+    created = client.post(f"/api/questions/{qid}/notes", json=body)
+    assert created.status_code == 201
+    note_id = created.json()["id"]
+    listed = client.get(f"/api/questions/{qid}/notes").json()
+    assert any(n["id"] == note_id for n in listed)
+    assert listed[0]["created_at"].endswith("Z")
+    assert client.delete(f"/api/questions/{qid}/notes/{note_id}").status_code == 204
+    remaining = client.get(f"/api/questions/{qid}/notes").json()
+    assert all(n["id"] != note_id for n in remaining)
+
+
+def test_notes_gated_and_404(client):
+    qid = client.get("/api/questions").json()[-1]["id"]
+    assert client.get("/api/questions/999999/notes").status_code == 404
+    assert client.delete(f"/api/questions/{qid}/notes/999999").status_code == 404
+    app.state.require_api_key = True
+    try:
+        resp = client.post(f"/api/questions/{qid}/notes", json={"body": "should be rejected"})
+        assert resp.status_code == 401
+    finally:
+        app.state.require_api_key = None
