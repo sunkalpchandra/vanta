@@ -1,4 +1,6 @@
 import { MarketsBrowser } from "@/components/MarketsBrowser";
+import { ActivityTape } from "@/components/ActivityTape";
+import { getActivitySample } from "@/lib/data";
 import { IS_STATIC } from "@/lib/config";
 import * as data from "@/lib/data";
 import type { MarketsOut } from "@/lib/trader";
@@ -23,7 +25,7 @@ async function loadSample(): Promise<MarketsOut> {
 }
 
 export default async function MarketsIndexPage() {
-  const sample = await loadSample();
+  const [sample, tape] = await Promise.all([loadSample(), getActivitySample()]);
   return (
     <div>
       <div className="mb-8">
@@ -34,6 +36,10 @@ export default async function MarketsIndexPage() {
         </p>
       </div>
       <MarketsBrowser sample={sample} />
+      <section className="mt-10">
+        <div className="micro-label mb-3">Live activity — recent trades across all traders</div>
+        <ActivityTape sample={tape} />
+      </section>
     </div>
   );
 }
