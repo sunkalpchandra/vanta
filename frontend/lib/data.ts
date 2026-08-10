@@ -8,6 +8,7 @@
 import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
+  RealBacktestOut,
   AgentCalibrationBin,
   AgentLeaderboardRow,
   AgentRecord,
@@ -65,6 +66,12 @@ export const getMarketHistory = (id: string) =>
 export const getLeaderboard = () => get<LeaderboardRow[]>("/api/leaderboard", "leaderboard.json", []);
 export const getBrief = () => get<BriefItem[]>("/api/brief", "brief.json", []);
 export const getStats = () => get<StatsOut | null>("/api/stats", "stats.json", null);
+export const getRealBacktest = (horizon: 7 | 30) =>
+  get<RealBacktestOut | null>(
+    `/api/backtest/real?horizon=${horizon}`,
+    `backtest-real-${horizon}.json`,
+    null,
+  );
 export const getCalibration = () =>
   get<CalibrationBin[]>("/api/leaderboard/calibration", "calibration.json", []);
 export const getCategories = () => get<CategoryOut[]>("/api/categories", "categories.json", []);

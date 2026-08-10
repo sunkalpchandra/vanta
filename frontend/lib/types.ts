@@ -202,3 +202,22 @@ export interface PredictionOut {
   outcome: number;
   resolved_at: string;
 }
+
+export type RealBacktestOut = {
+  available?: boolean; // static snapshot sentinel
+  horizon_days: number;
+  category: string | null;
+  n: number;
+  n_resolved_corpus: number;
+  coverage: number;
+  vanta_brier: number | null;
+  market_brier: number | null;
+  vanta_log: number | null;
+  market_log: number | null;
+  vanta_accuracy: number | null;
+  market_accuracy: number | null;
+  base_rate_brier: number | null;
+  outcome_base_rate: number | null;
+  sources: Record<string, number>;
+  median_volume_usd: number | null;
+};
