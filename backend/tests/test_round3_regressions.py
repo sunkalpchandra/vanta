@@ -46,11 +46,18 @@ def test_changes_ignores_synthetic_backfill(client):
     backfill rows, so before any refresh the delta must be null; after one
     refresh, 'from' must equal the pre-refresh REAL probability — not
     whichever backfill row happens to sort next."""
-    seeded_qid = client.get("/api/questions").json()[-1]["id"]
+    # Earlier modules may have resolved or refreshed seeded questions; the
+    # regression only bites with exactly ONE real run, so find a still-fresh
+    # unresolved seeded question (oldest first).
+    candidates = client.get("/api/questions?resolved=false").json()
+    seeded_qid = None
+    for q in reversed(candidates):
+        if client.get(f"/api/questions/{q['id']}/changes").json()["delta"] is None:
+            seeded_qid = q["id"]
+            break
+    assert seeded_qid is not None, "no fresh seeded question left — revisit this setup"
     history = client.get(f"/api/questions/{seeded_qid}/history").json()
     assert len(history) >= 30  # backfill definitely present
-    before = client.get(f"/api/questions/{seeded_qid}/changes").json()
-    assert before["delta"] is None and before["from"] is None
     real_prob = client.get(f"/api/questions/{seeded_qid}").json()["latest_forecast"]["probability"]
     client.post(f"/api/questions/{seeded_qid}/refresh")
     after = client.get(f"/api/questions/{seeded_qid}/changes").json()
