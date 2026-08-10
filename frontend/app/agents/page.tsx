@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getAgentLeaderboard } from "@/lib/data";
 
 export const metadata = { title: "agent leaderboard — vanta" };
@@ -34,9 +35,14 @@ export default async function AgentsPage() {
               <span className="num w-5 text-right text-sm font-bold text-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className={`text-sm font-semibold ${row.agent === "synthesis" ? "text-accent" : "text-ink"}`}>
+                  <Link
+                    href={`/agents/${row.agent}`}
+                    className={`text-sm font-semibold transition-colors hover:text-accent ${
+                      row.agent === "synthesis" ? "text-accent" : "text-ink"
+                    }`}
+                  >
                     {AGENT_LABELS[row.agent] ?? row.agent}
-                  </span>
+                  </Link>
                   <span className="num text-xs text-muted">
                     {row.n_resolved} resolved · acc {(row.accuracy * 100).toFixed(0)}% · log{" "}
                     {row.log_score.toFixed(2)}
