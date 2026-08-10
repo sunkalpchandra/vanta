@@ -79,8 +79,18 @@ def _seed_questions(db: Session) -> bool:
         forecast, _ = run_and_store_forecast(db, question)
         _backfill_history(db, question, forecast)
         _backfill_market_history(db, question)
+        _spread_evidence_dates(db, question)
     db.commit()
     return changed
+
+
+def _spread_evidence_dates(db: Session, question: Question, max_age_days: int = 25) -> None:
+    """Seeded evidence didn't all arrive today: spread arrival dates over the
+    past weeks (deterministic per question) so chart markers tell a story."""
+    rng = random.Random(question.id * 31337 + 11)
+    now = utcnow()
+    for evidence in question.evidence:
+        evidence.created_at = now - timedelta(days=rng.randint(1, max_age_days), hours=rng.randint(0, 23))
 
 
 def _has_forecast(db: Session, question: Question) -> bool:
