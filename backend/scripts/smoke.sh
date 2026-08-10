@@ -39,5 +39,8 @@ QID=$(curl -s "$BASE/api/questions" | python3 -c "import json,sys; print(json.lo
 check "/api/questions/$QID"
 check "/api/questions/$QID/history"
 check "/api/cards/$QID.svg"
+check "/api/questions/$QID/notes"
+check "/api/brief?count=3&category=technology"
+check "/api/meta"
 
 echo "smoke: all checks passed against $BASE"
