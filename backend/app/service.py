@@ -10,7 +10,25 @@ from .agents.orchestrator import PipelineResult, run_pipeline
 from .models import AgentReport, AgentTrackRecord, Evidence, Forecast, Prediction, Question, utcnow
 
 
-def build_context(question: Question, evidence: list[Evidence]) -> QuestionContext:
+def learned_base_rate(db: Session, category: str, pseudo_count: float = 20.0) -> float:
+    """Static category prior blended with the observed resolved record.
+
+    The static prior acts as `pseudo_count` phantom resolutions, so the
+    observed rate takes over gradually as real resolutions accumulate:
+    (static * k + observed_yes) / (k + n).
+    """
+    static = base_rate_for(category)
+    rows = db.execute(
+        select(Prediction.outcome).where(Prediction.category == category)
+    ).all()
+    n = len(rows)
+    if n == 0:
+        return static
+    observed_yes = sum(outcome for (outcome,) in rows)
+    return (static * pseudo_count + observed_yes) / (pseudo_count + n)
+
+
+def build_context(db: Session, question: Question, evidence: list[Evidence]) -> QuestionContext:
     return QuestionContext(
         question=question.question,
         category=question.category,
@@ -22,12 +40,13 @@ def build_context(question: Question, evidence: list[Evidence]) -> QuestionConte
             {"source": e.source, "summary": e.summary, "sentiment": e.sentiment, "impact": e.impact}
             for e in evidence
         ],
+        base_rate=round(learned_base_rate(db, question.category), 4),
     )
 
 
 def run_and_store_forecast(db: Session, question: Question) -> tuple[Forecast, PipelineResult]:
     """Run the full agent pipeline for a question and persist the results."""
-    result = run_pipeline(build_context(question, question.evidence))
+    result = run_pipeline(build_context(db, question, question.evidence))
 
     # The pipeline can take a while (LLM narratives): a resolve may have landed
     # since the caller's guard. Re-check before touching the frozen record.
