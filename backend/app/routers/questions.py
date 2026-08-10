@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import require_operator
-from ..models import Evidence, Forecast, MarketSnapshot, Question
+from ..models import Evidence, Forecast, MarketSnapshot, Question, QuestionNote
 from ..quant.analogs import tokenize
 from ..schemas import (
     AskRequest,
@@ -13,6 +13,8 @@ from ..schemas import (
     HistoryPoint,
     MarketPoint,
     MarketUpdateRequest,
+    NoteIn,
+    NoteOut,
     QuestionDetail,
     QuestionOut,
     RelatedQuestion,
@@ -284,3 +286,46 @@ def _detail(db: Session, question: Question) -> QuestionDetail:
     detail.agent_reports = [r for r in question.agent_reports]
     detail.difficulty = _difficulty(question, latest)
     return detail
+
+
+@router.get("/{question_id}/notes", response_model=list[NoteOut])
+def list_notes(question_id: int, db: Session = Depends(get_db)):
+    _get_question_or_404(db, question_id)
+    return (
+        db.query(QuestionNote)
+        .filter(QuestionNote.question_id == question_id)
+        .order_by(QuestionNote.created_at.desc(), QuestionNote.id.desc())
+        .all()
+    )
+
+
+@router.post(
+    "/{question_id}/notes",
+    response_model=NoteOut,
+    status_code=201,
+    dependencies=[Depends(require_operator)],
+)
+def add_note(question_id: int, body: NoteIn, db: Session = Depends(get_db)):
+    _get_question_or_404(db, question_id)
+    note = QuestionNote(question_id=question_id, body=body.body.strip())
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return note
+
+
+@router.delete(
+    "/{question_id}/notes/{note_id}",
+    status_code=204,
+    dependencies=[Depends(require_operator)],
+)
+def delete_note(question_id: int, note_id: int, db: Session = Depends(get_db)):
+    note = (
+        db.query(QuestionNote)
+        .filter(QuestionNote.id == note_id, QuestionNote.question_id == question_id)
+        .first()
+    )
+    if note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    db.delete(note)
+    db.commit()
