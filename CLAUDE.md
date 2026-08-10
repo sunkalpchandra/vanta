@@ -21,6 +21,18 @@
 - Only server components may import `frontend/lib/data.ts` (it reads the filesystem in static
   mode). Client components import from `frontend/lib/api.ts`.
 
+## Newer surface worth knowing
+
+- Resolution writes three things atomically: the `predictions` row, per-agent
+  `agent_track_records`, and the question freeze (guarded UPDATE + unique
+  index). It also busts the brief cache. Extend `resolve_question`, don't
+  bypass it.
+- `service.learned_base_rate` is the only place the category prior touches the
+  DB; agents read it from `QuestionContext.base_rate`.
+- The static snapshot must stay in lockstep with `frontend/lib/data.ts`
+  snapshot names — anything added there needs a matching entry in
+  `backend/scripts/export_snapshot.py`.
+
 ## Verification loop
 
 ```
