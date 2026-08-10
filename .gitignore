@@ -33,3 +33,4 @@ frontend/public/track-record.csv
 .DS_Store
 .idea/
 .vscode/
+backend/.hypothesis/
