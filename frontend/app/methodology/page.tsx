@@ -31,7 +31,10 @@ const AGENTS = [
 
 export const metadata = { title: "methodology — vanta" };
 
-export default function MethodologyPage() {
+import { getBacktest } from "@/lib/data";
+
+export default async function MethodologyPage() {
+  const backtest = await getBacktest();
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-8">
@@ -93,6 +96,24 @@ export default function MethodologyPage() {
           </p>
         </div>
       </section>
+
+      {backtest && (
+        <section className="card mt-4 p-6">
+          <div className="micro-label mb-3">A checkable claim — analog-engine backtest</div>
+          <p className="text-sm leading-relaxed text-ink-2">
+            Leave-one-out replay over the {backtest.n_events} resolved reference events: the analog
+            engine ventured a forecast on {backtest.n_covered} ({Math.round(backtest.coverage * 100)}%
+            coverage, abstaining elsewhere) and scored a Brier of{" "}
+            <strong className="num text-ink">{backtest.brier?.toFixed(3)}</strong> against the
+            always-predict-the-base-rate benchmark of{" "}
+            <strong className="num text-ink">{backtest.baseline_brier.toFixed(3)}</strong>
+            {backtest.accuracy != null && (
+              <> · directional accuracy {Math.round(backtest.accuracy * 100)}%</>
+            )}
+            . Run it yourself: <span className="num">GET /api/quant/backtest</span>.
+          </p>
+        </section>
+      )}
 
       <section className="card mt-4 border-accent/30 p-6">
         <div className="micro-label mb-3">Honest limits</div>
