@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BASE_PATH } from "@/lib/config";
 import "./globals.css";
 
+export const viewport = {
+  themeColor: "#08090d",
+};
+
 export const metadata: Metadata = {
+  // metadata.manifest is not basePath-prefixed automatically — do it ourselves.
+  manifest: `${BASE_PATH}/site.webmanifest`,
   title: "vanta — forecasting intelligence",
   description:
     "Autonomous multi-agent intelligence engine for probabilistic forecasting. What the world believes will happen — and what will actually happen.",
