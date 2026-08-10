@@ -32,6 +32,7 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 POLYMARKET_PAGE_SIZE = 100
 KALSHI_PAGE_SIZE = 1000
+MANIFOLD_PAGE_SIZE = 500
 PAGE_SLEEP_SECONDS = 0.05
 # How long after its last sync a now-delisted event is still probed for a
 # resolution the venue dropped before it reached the API.
@@ -49,7 +50,7 @@ def _utc(value: datetime | None) -> datetime | None:
     return value
 
 
-def pull_active(session, polymarket_pages: int, kalshi_pages: int) -> dict:
+def pull_active(session, polymarket_pages: int, kalshi_pages: int, manifold_pages: int = 3) -> dict:
     """Stage 1: fetch + reconcile both venues. Returns merged counts."""
     from app.ingest.active import (
         fetch_active_kalshi,
@@ -78,6 +79,22 @@ def pull_active(session, polymarket_pages: int, kalshi_pages: int) -> dict:
         session.commit()
         if cursor is None:
             break
+        time.sleep(PAGE_SLEEP_SECONDS)
+
+    # Manifold as a first-class live venue.
+    from app.ingest.manifold import fetch_markets as fetch_manifold
+    from app.ingest.manifold import normalize_active as manifold_normalize
+
+    before = None
+    for _ in range(manifold_pages):
+        markets = fetch_manifold(before, MANIFOLD_PAGE_SIZE)
+        if not markets:
+            break
+        rows = [row for row in (manifold_normalize(m) for m in markets) if row is not None]
+        for key, value in sync_active(session, rows, "manifold").items():
+            counts[key] += value
+        session.commit()
+        before = markets[-1].get("id")
         time.sleep(PAGE_SLEEP_SECONDS)
     return counts
 
@@ -152,13 +169,15 @@ def run_pass(session, args) -> dict:
     """One full stateless pass. Returns the printed counts."""
     from app.ingest.active import deactivate_stale
 
-    counts = pull_active(session, args.polymarket_pages, args.kalshi_pages)
+    counts = pull_active(session, args.polymarket_pages, args.kalshi_pages, args.manifold_pages)
     from app.pricehistory import record_ticks_for_active
 
     counts["ticks"] = record_ticks_for_active(session)
     session.commit()
-    counts["deactivated"] = deactivate_stale(session, "polymarket", args.stale_hours) + deactivate_stale(
-        session, "kalshi", args.stale_hours
+    counts["deactivated"] = (
+        deactivate_stale(session, "polymarket", args.stale_hours)
+        + deactivate_stale(session, "kalshi", args.stale_hours)
+        + deactivate_stale(session, "manifold", args.stale_hours)
     )
     session.commit()
     counts["settled"] = settlement_sweep(session) if args.settle else 0
@@ -175,6 +194,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--polymarket-pages", type=int, default=30, help="gamma pages of 100 to pull (top volume)")
     parser.add_argument("--kalshi-pages", type=int, default=3, help="kalshi pages of 1000 to pull")
+    parser.add_argument("--manifold-pages", type=int, default=3, help="manifold pages of 500 to pull")
     parser.add_argument("--stale-hours", type=float, default=24.0, help="deactivate events unseen this long")
     parser.add_argument(
         "--settle",
