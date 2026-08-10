@@ -25,7 +25,9 @@ async function loadSample(): Promise<MarketsOut> {
 }
 
 export default async function MarketsIndexPage() {
-  const [sample, tape] = await Promise.all([loadSample(), getActivitySample()]);
+  const sample = await loadSample();
+  // ActivityTape fetches live itself; only the static demo needs a baked sample.
+  const tape = IS_STATIC ? await getActivitySample() : [];
   return (
     <div>
       <div className="mb-8">
