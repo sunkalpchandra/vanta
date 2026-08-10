@@ -24,7 +24,7 @@ class HistorianAgent(Agent):
     name = "historian"
 
     def run(self, ctx: QuestionContext, prior_outputs: list[AgentOutput]) -> AgentOutput:
-        base = base_rate_for(ctx.category)
+        base = ctx.base_rate if ctx.base_rate is not None else base_rate_for(ctx.category)
         # Long horizons leave more room for surprises: pull the market's
         # current read toward the category base rate as horizon grows.
         horizon_pull = min(0.5, ctx.horizon_days / 720)
