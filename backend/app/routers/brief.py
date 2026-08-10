@@ -3,10 +3,11 @@
 Cached for 10 minutes (Redis when REDIS_URL is set, in-process otherwise).
 """
 
+import html
 import json
 import time
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -120,3 +121,27 @@ def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depen
         )
     _cache_set(cache_key, json.dumps([i.model_dump() for i in items]))
     return items
+
+
+@router.get("/rss")
+def morning_brief_rss(db: Session = Depends(get_db)):
+    """The brief as RSS — subscribe to what the world is wrong about."""
+    items = morning_brief(count=5, db=db)
+    entries = "".join(
+        f"""
+  <item>
+    <title>{html.escape(f"{i.question} — market {i.market_probability:.0%}, vanta {i.vanta_probability:.0%}")}</title>
+    <description>{html.escape(i.one_liner)}</description>
+    <guid isPermaLink="false">vanta-brief-{i.question_id}</guid>
+  </item>"""
+        for i in items
+    )
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>vanta Morning Brief</title>
+  <link>https://sunkalpchandra.github.io/vanta/brief/</link>
+  <description>The things the world is most wrong about, from the vanta agent pipeline.</description>{entries}
+</channel>
+</rss>"""
+    return Response(content=xml, media_type="application/rss+xml")
