@@ -33,9 +33,12 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 POLYMARKET_PAGE_SIZE = 100
 KALSHI_PAGE_SIZE = 1000
 PAGE_SLEEP_SECONDS = 0.05
-# "Recently active": how long after its last sync a now-inactive event still
-# gets settlement probes — covers venues that delist before resolution lands.
+# How long after its last sync a now-delisted event is still probed for a
+# resolution the venue dropped before it reached the API.
 RECENTLY_ACTIVE_HOURS = 72
+# Per-pass cap on venue resolution probes (one request each). The position-
+# driven settle_resolved backstop pays out anything the probes miss, so this
+# only bounds discovery latency, never whether winners get paid.
 SETTLE_BUDGET = 200
 
 
@@ -80,20 +83,20 @@ def pull_active(session, polymarket_pages: int, kalshi_pages: int) -> dict:
 
 
 def settlement_sweep(session, fetch_row=None, budget: int = SETTLE_BUDGET) -> int:
-    """Stage 3: find venue-resolved events and settle their positions.
+    """Stage 3: discover venue resolutions and pay out positions.
 
-    Candidates are unresolved events that are still active with their close
-    time passed, or recently active but delisted (venues often drop a market
-    from the feed before the resolution reaches the API). Each candidate
-    costs one venue request, so the sweep is budgeted. Returns the number of
-    events settled this pass."""
+    Probes unresolved past-close events (newest close first, budgeted — one
+    venue request each) to record outcomes, then runs settle_resolved as a
+    position-driven backstop that pays out EVERY resolved event with unsettled
+    positions — including those closed by sync_active and those a prior budget
+    couldn't reach. Returns the number of events newly resolved by probing."""
     try:
-        from app.trading import settle_event
+        from app.trading import settle_event, settle_resolved
     except ImportError as exc:  # pragma: no cover - exercised via sys.modules poisoning
         raise RuntimeError(
             "app.trading is not available — the settlement sweep needs "
-            "app.trading.settle_event to pay out positions. Deploy the "
-            "trading module (or run with --no-settle) before syncing."
+            "app.trading to pay out positions. Deploy the trading module "
+            "(or run with --no-settle) before syncing."
         ) from exc
 
     from sqlalchemy import select
@@ -106,21 +109,25 @@ def settlement_sweep(session, fetch_row=None, budget: int = SETTLE_BUDGET) -> in
     now = datetime.now(UTC)
     recent_cutoff = now - timedelta(hours=RECENTLY_ACTIVE_HOURS)
 
+    # Discovery candidates (one venue request each, budgeted): unresolved
+    # events that are either past their stated close, or recently delisted
+    # (venues often drop a market before the resolution reaches the API).
+    # Ordered newest-close-first so the budget favors the freshest closes;
+    # anything not reached this pass is retried next pass — and payout never
+    # waits on discovery thanks to the settle_resolved backstop below.
     candidates = []
     for event in session.scalars(
         select(MarketEvent).where(MarketEvent.outcome.is_(None), MarketEvent.last_synced.is_not(None))
     ):
-        last_synced = _utc(event.last_synced)
         close_time = _utc(event.close_time)
         if event.active:
-            # Still listed: only probe once the stated close has passed.
             if close_time is not None and close_time <= now:
                 candidates.append(event)
-        elif last_synced >= recent_cutoff:
-            # Recently delisted: the venue may have settled it off-feed.
+        elif _utc(event.last_synced) >= recent_cutoff:
             candidates.append(event)
+    candidates.sort(key=lambda e: _utc(e.close_time) or now, reverse=True)
 
-    settled = 0
+    resolved = 0
     for event in candidates[:budget]:
         row = fetch_row(event.source, event.source_id)
         outcome = active_module.resolution_of(event.source, row)
@@ -130,8 +137,15 @@ def settlement_sweep(session, fetch_row=None, budget: int = SETTLE_BUDGET) -> in
         event.active = False
         settle_event(session, event)
         session.commit()  # per-event: a crash mid-sweep never re-pays settled events
-        settled += 1
-    return settled
+        resolved += 1
+
+    # Backstop: pay out EVERY resolved event that still has unsettled positions
+    # — including those the sweep's budget couldn't reach and those sync_active
+    # closed by recording an outcome without settling. Position-driven, so no
+    # payout is ever orphaned by a time window or a budget cap.
+    settle_resolved(session)
+    session.commit()
+    return resolved
 
 
 def run_pass(session, args) -> dict:
