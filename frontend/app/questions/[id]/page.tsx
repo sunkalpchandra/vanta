@@ -10,7 +10,7 @@ import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { StatTile } from "@/components/StatTile";
 import { shareCardHref } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
-import { getHistory, getQuestion, getQuestions } from "@/lib/data";
+import { getHistory, getMarketHistory, getQuestion, getQuestions } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -40,7 +40,11 @@ export async function generateStaticParams() {
 
 export default async function QuestionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [detail, history] = await Promise.all([getQuestion(id), getHistory(id)]);
+  const [detail, history, marketHistory] = await Promise.all([
+    getQuestion(id),
+    getHistory(id),
+    getMarketHistory(id),
+  ]);
   if (!detail) notFound();
   const forecast = detail.latest_forecast;
   const edge = forecast ? forecast.probability - detail.market_probability : 0;
@@ -85,8 +89,8 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
 
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <div className="card p-5 lg:col-span-2">
-              <div className="micro-label mb-3">Forecast history — 30 days</div>
-              <ProbabilityChart history={history} marketProbability={detail.market_probability} />
+              <div className="micro-label mb-3">vanta vs market — 30 days</div>
+              <ProbabilityChart history={history} marketHistory={marketHistory} />
             </div>
             <div className="card flex flex-col justify-between gap-6 p-5">
               <ConfidenceMeter value={forecast.confidence} />
