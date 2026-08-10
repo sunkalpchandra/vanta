@@ -7,6 +7,7 @@ import { DebatePanel } from "@/components/DebatePanel";
 import { EvidenceList } from "@/components/EvidenceList";
 import { LiveControls } from "@/components/LiveControls";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
+import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { StatTile } from "@/components/StatTile";
 import { shareCardHref } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
@@ -89,8 +90,12 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
 
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <div className="card p-5 lg:col-span-2">
-              <div className="micro-label mb-3">vanta vs market — 30 days</div>
-              <ProbabilityChart history={history} marketHistory={marketHistory} />
+              <div className="micro-label mb-3">vanta vs market — 30 days · &quot;e&quot; marks evidence arrivals</div>
+              <ProbabilityChart
+                history={history}
+                marketHistory={marketHistory}
+                evidenceDates={detail.evidence.map((e) => e.created_at)}
+              />
             </div>
             <div className="card flex flex-col justify-between gap-6 p-5">
               <ConfidenceMeter value={forecast.confidence} />
@@ -122,6 +127,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
           </div>
 
           <AnalogsPanel reports={detail.agent_reports} />
+          <SensitivityPanel questionId={detail.id} />
           <LiveControls questionId={detail.id} resolved={detail.resolved} />
         </>
       )}
