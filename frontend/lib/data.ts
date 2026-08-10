@@ -14,6 +14,7 @@ import type {
   FeedCard,
   HistoryPoint,
   LeaderboardRow,
+  PredictionOut,
   QuestionDetail,
   QuestionOut,
   StatsOut,
@@ -55,3 +56,5 @@ export const getStats = () => get<StatsOut | null>("/api/stats", "stats.json", n
 export const getCalibration = () =>
   get<CalibrationBin[]>("/api/leaderboard/calibration", "calibration.json", []);
 export const getCategories = () => get<CategoryOut[]>("/api/categories", "categories.json", []);
+export const getPredictions = () =>
+  get<PredictionOut[]>("/api/leaderboard/predictions", "predictions.json", []);
