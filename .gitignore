@@ -39,3 +39,4 @@ backend/.hypothesis/
 .ingest_polymarket_ckpt.json
 .ingest_kalshi_ckpt.json
 backend/.ingest_*_ckpt.json
+frontend/tsconfig.tsbuildinfo
