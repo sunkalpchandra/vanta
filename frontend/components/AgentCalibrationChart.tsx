@@ -15,6 +15,26 @@ const INK_MUTED = "#5c6675";
 const GRID = "#1e2632";
 const SERIES = "#3987e5";
 
+function CalibrationTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number | null }[];
+  label?: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const observed = payload.find((entry) => entry.name === "observed");
+  if (!observed || observed.value == null) return null;
+  return (
+    <div className="card px-3 py-2 text-xs shadow-xl">
+      <div className="micro-label">predicted ≈ {label}%</div>
+      <div className="num mt-0.5 font-bold text-ink">observed {observed.value}%</div>
+    </div>
+  );
+}
+
 export function AgentCalibrationChart({ bins }: { bins: AgentCalibrationBin[] }) {
   const data = bins.map((b) => ({
     mid: Math.round(b.mid * 100),
@@ -46,9 +66,8 @@ export function AgentCalibrationChart({ bins }: { bins: AgentCalibrationBin[] })
             tickLine={false}
           />
           <Tooltip
-            formatter={(value: number, name: string) => [`${value}%`, name]}
-            labelFormatter={(label: number) => `predicted ≈ ${label}%`}
-            contentStyle={{ background: "#0f131b", border: "1px solid #1e2632", borderRadius: 8, fontSize: 12 }}
+            content={<CalibrationTooltip />}
+            cursor={{ stroke: INK_MUTED, strokeDasharray: "3 3" }}
           />
           <Line dataKey="perfect" stroke={INK_MUTED} strokeDasharray="4 4" strokeWidth={1} dot={false} />
           <Line
