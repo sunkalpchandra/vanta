@@ -46,12 +46,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[get_settings().frontend_origin],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
@@ -88,6 +82,9 @@ async def rate_limit_mutations(request: Request, call_next):
     if limit and request.method in {"POST", "DELETE"} and request.url.path.startswith("/api"):
         client_ip = request.client.host if request.client else "unknown"
         now = time.monotonic()
+        if len(_rate_buckets) > 1024:  # bound per-IP key growth (scanners, NAT churn)
+            for ip in [ip for ip, b in _rate_buckets.items() if not b or now - b[-1] > 60]:
+                del _rate_buckets[ip]
         bucket = _rate_buckets.setdefault(client_ip, deque())
         while bucket and now - bucket[0] > 60:
             bucket.popleft()
@@ -112,12 +109,26 @@ async def timing_and_cache_headers(request: Request, call_next):
         path_label = getattr(route, "path", "other")
         key = (f"{request.method} {path_label}", response.status_code)
         _request_counts[key] = _request_counts.get(key, 0) + 1
-    if request.method == "GET" and "cache-control" not in response.headers:
+    if (
+        request.method == "GET"
+        and 200 <= response.status_code < 300
+        and "cache-control" not in response.headers
+    ):
         for prefix, max_age in CACHE_RULES:
             if request.url.path.startswith(prefix):
                 response.headers["Cache-Control"] = f"public, max-age={max_age}"
                 break
     return response
+
+# Registered last so CORS is the OUTERMOST middleware: rate-limit 429s and
+# error-shield 500s must still carry CORS headers or the browser shows an
+# opaque network error instead of the status and Retry-After/request_id.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[get_settings().frontend_origin],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(questions.router)
 app.include_router(feed.router)
