@@ -1,0 +1,2 @@
+# Development-only tools, pinned for reproducible CI lint results.
+ruff==0.16.2
