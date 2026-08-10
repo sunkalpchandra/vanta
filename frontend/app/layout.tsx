@@ -21,17 +21,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen">
         <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Link href="/" className="flex items-baseline gap-2">
+          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-5">
+            <Link href="/" className="flex shrink-0 items-baseline gap-2">
               <span className="num text-[15px] font-bold tracking-[0.35em] text-ink">VANTA</span>
-              <span className="micro-label hidden sm:inline">intelligence engine</span>
+              <span className="micro-label hidden md:inline">intelligence engine</span>
             </Link>
-            <nav className="flex items-center gap-1">
+            {/* Scrolls horizontally on phone widths instead of overflowing the page */}
+            <nav className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
               {NAV.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-md px-3 py-1.5 text-[13px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                  className="shrink-0 rounded-md px-3 py-1.5 text-[13px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
                 >
                   {item.label}
                 </Link>
