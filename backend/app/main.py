@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 import uuid
 from collections import deque
@@ -160,10 +161,12 @@ def metrics():
 
 @app.get("/api/meta")
 def meta():
-    """Build identity for clients and monitors."""
+    """Build identity for clients and monitors. GIT_SHA is stamped by the
+    deploy environment (Pages workflow, docker build) — absent locally."""
     return {
         "name": "vanta",
         "version": app.version,
+        "commit": os.environ.get("GIT_SHA"),
         "docs": "/docs",
         "source": "https://github.com/sunkalpchandra/vanta",
     }
