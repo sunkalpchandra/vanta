@@ -37,6 +37,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Concurrent `POST /resolve` could double-settle a question (guarded UPDATE +
   unique index); a resolve landing mid-pipeline no longer corrupts the frozen
   record; the morning-brief cache is invalidated on resolution.
+- Movers no longer emit zero-delta rows for questions with no forecast inside
+  the window; brief ranks stay monotonic in |edge| after the diversity
+  backfill; watchlist adds reject built-in duplicates and covered questions,
+  and discovery can't mint duplicates within one call; seeding now finishes
+  questions stranded forecast-less by a crash mid-boot; the sitemap lists
+  category pages; the watch-a-signal form stays reachable at zero candidates.
 - Calibration bins assigned by index — float bin edges dropped exact round
   quotes (0.30, 0.70) into the bin below.
 - Backend test suite is order-independent (suite DB bound in conftest.py).
