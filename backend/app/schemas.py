@@ -68,6 +68,9 @@ class QuestionDetail(QuestionOut):
     latest_forecast: ForecastOut | None = None
     evidence: list[EvidenceOut] = []
     agent_reports: list[AgentReportOut] = []
+    # 1 (well-grounded) .. 5 (speculative): horizon length, evidence thinness,
+    # market thinness, and vanta-market disagreement all raise it.
+    difficulty: int | None = None
 
 
 class MoverCard(BaseModel):
