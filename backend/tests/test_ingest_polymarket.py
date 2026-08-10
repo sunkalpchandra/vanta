@@ -119,7 +119,9 @@ def test_normalize_yes_winner():
     assert row["source_id"] == "104348"
     assert row["outcome"] == 1
     assert row["category"] == "politics"
-    assert row["close_time"] == datetime(2021, 4, 13, tzinfo=UTC)
+    # closedTime (the ACTUAL close) wins over the scheduled endDate —
+    # early-resolved markets otherwise get post-resolution "pre-close" prices.
+    assert row["close_time"] == datetime(2021, 4, 14, 20, 43, 26, tzinfo=UTC)
     assert row["volume_usd"] == 44354.36
     assert row["final_price"] == pytest.approx(1.0, abs=1e-6)  # YES side
     assert len(row["raw"]["clobTokenIds"]) == 2  # kept for the price pass
@@ -153,8 +155,10 @@ def test_normalize_clob_era_exact_prices_and_tag_category():
 def test_normalize_rejects_junk():
     assert normalize(MARKET_MULTI) is None  # six buckets, not binary
     assert normalize({**MARKET_YES, "question": "  "}) is None
-    assert normalize({**MARKET_YES, "endDate": "soon"}) is None
-    assert normalize({**MARKET_YES, "endDate": None}) is None
+    assert normalize({**MARKET_YES, "endDate": "soon", "closedTime": None}) is None
+    # An unparseable endDate alone is fine when the actual closedTime exists.
+    assert normalize({**MARKET_YES, "endDate": "soon"}) is not None
+    assert normalize({**MARKET_YES, "endDate": None, "closedTime": None}) is None
     assert normalize({**MARKET_YES, "outcomes": '["Long", "Short"]'}) is None
     assert normalize({**MARKET_YES, "id": ""}) is None
 
