@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Evidence, Forecast, MarketSnapshot, Question
+from ..quant.analogs import tokenize
 from ..schemas import (
     AskRequest,
     EvidenceIn,
@@ -13,6 +14,7 @@ from ..schemas import (
     MarketUpdateRequest,
     QuestionDetail,
     QuestionOut,
+    RelatedQuestion,
     ResolveRequest,
 )
 from ..service import (
@@ -134,6 +136,34 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     except ResolutionError as exc:  # resolved while the pipeline ran
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
+
+
+@router.get("/{question_id}/related", response_model=list[RelatedQuestion])
+def related(question_id: int, limit: int = Query(4, ge=1, le=10), db: Session = Depends(get_db)):
+    """Topically similar questions by token overlap (category counts a little)."""
+    question = _get_question_or_404(db, question_id)
+    q_tokens = tokenize(question.question)
+    if not q_tokens:
+        return []
+    scored: list[RelatedQuestion] = []
+    for other in db.scalars(select(Question).where(Question.id != question_id)).all():
+        o_tokens = tokenize(other.question)
+        if not o_tokens:
+            continue
+        overlap = len(q_tokens & o_tokens) / len(q_tokens | o_tokens)
+        score = overlap + (0.05 if other.category == question.category else 0.0)
+        if overlap > 0 and score >= 0.12:
+            scored.append(
+                RelatedQuestion(
+                    id=other.id,
+                    question=other.question,
+                    category=other.category,
+                    similarity=round(score, 3),
+                    resolved=other.resolved,
+                )
+            )
+    scored.sort(key=lambda r: r.similarity, reverse=True)
+    return scored[:limit]
 
 
 @router.get("/{question_id}/sensitivity")
