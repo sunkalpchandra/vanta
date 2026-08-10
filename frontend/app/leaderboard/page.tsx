@@ -2,15 +2,17 @@ import Link from "next/link";
 import { AccuracyChart } from "@/components/AccuracyChart";
 import { CalibrationChart } from "@/components/CalibrationChart";
 import { StatsBar } from "@/components/StatsBar";
-import { getCalibration, getLeaderboard, getStats } from "@/lib/data";
+import { getCalibration, getLeaderboard, getRealBacktest, getStats } from "@/lib/data";
+import { RealBacktestCard } from "@/components/RealBacktestCard";
 
 export const metadata = { title: "accuracy — vanta" };
 
 export default async function LeaderboardPage() {
-  const [rows, stats, calibration] = await Promise.all([
+  const [rows, stats, calibration, realBacktest] = await Promise.all([
     getLeaderboard(),
     getStats(),
     getCalibration(),
+    getRealBacktest(7),
   ]);
   return (
     <div>
@@ -20,6 +22,13 @@ export default async function LeaderboardPage() {
           Resolved-question track record by category — vanta vs the market&apos;s implied forecast.
           Lower Brier is better calibration.
         </p>
+      </div>
+      <section className="mb-8">
+        <div className="micro-label mb-3">Real-market backtest — Polymarket &amp; Kalshi</div>
+        <RealBacktestCard result={realBacktest} />
+      </section>
+      <div className="micro-label mb-3">
+        Synthetic demo corpus below — exercises the UI, claims no edge by construction
       </div>
       {stats && <div className="mb-4">{<StatsBar stats={stats} />}</div>}
       {rows.length === 0 ? (
