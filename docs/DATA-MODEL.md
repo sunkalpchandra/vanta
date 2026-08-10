@@ -1,6 +1,6 @@
 # Data model
 
-Nine tables, all declared in `backend/app/models.py` against the single `DeclarativeBase` in
+Ten tables, all declared in `backend/app/models.py` against the single `DeclarativeBase` in
 `backend/app/db.py`. The schema is created at startup (`Base.metadata.create_all` in the app
 lifespan) and seeded idempotently by `seed.py` — there are no migrations yet. Everything runs
 identically on SQLite (the default) and Postgres (compose).
