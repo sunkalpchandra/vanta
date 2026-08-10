@@ -1,16 +1,33 @@
+from functools import lru_cache
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..agents.historian import CATEGORY_BASE_RATES
+from ..data import REFERENCE_EVENTS
 from ..db import get_db
 from ..llm import llm_available
 from ..models import Prediction, Question
+from ..quant.backtest import run_backtest
 from ..quant.scoring import brier_score, directional_accuracy, log_score, murphy_decomposition
-from ..schemas import CategoryOut, StatsOut
+from ..schemas import BacktestOut, CategoryOut, StatsOut
 from .feed import latest_forecasts
 
 router = APIRouter(tags=["stats"])
+
+
+@lru_cache(maxsize=1)
+def _cached_backtest():
+    # Pure function of the static corpus — compute once per process.
+    return run_backtest(REFERENCE_EVENTS)
+
+
+@router.get("/api/quant/backtest", response_model=BacktestOut)
+def quant_backtest():
+    """Leave-one-out backtest of the analog engine over the reference corpus,
+    with the always-predict-base-rate benchmark alongside."""
+    return _cached_backtest()
 
 
 @router.get("/api/stats", response_model=StatsOut)
