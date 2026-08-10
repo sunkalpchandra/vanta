@@ -15,3 +15,10 @@ def test_meta_identity(client):
     assert body["name"] == "vanta"
     assert body["version"]
     assert body["source"].startswith("https://github.com/")
+
+
+def test_meta_commit_stamp(client, monkeypatch):
+    monkeypatch.setenv("GIT_SHA", "abc1234")
+    assert client.get("/api/meta").json()["commit"] == "abc1234"
+    monkeypatch.delenv("GIT_SHA")
+    assert client.get("/api/meta").json()["commit"] is None
