@@ -56,6 +56,10 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 - **Self-measurement** — a leave-one-out backtest of the analog engine, published with its no-skill benchmark
 - **Ask vanta** — pose any yes/no future event; the full pipeline deliberates on demand
 - **Shareable cards** — self-contained SVG prediction cards, stamped once resolved
+- **Market history** — the market is a moving series, charted against vanta with evidence-arrival markers
+- **Explanations** — leave-one-out evidence sensitivity, what-changed diffs, related questions, historical analogs, difficulty scores
+- **Operations** — alerts, digest, unified search, starred questions, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
+- **Performance, measured** — constant-query hot paths, batched sparklines, gzip + caching; see [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 
 ## Quick start (no keys, no Docker)
 
