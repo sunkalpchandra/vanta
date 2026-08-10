@@ -71,3 +71,8 @@ jobs:
         env:
           NEXT_PUBLIC_STATIC_MODE: "1"
           NEXT_PUBLIC_BASE_PATH: /vanta
+      # E2E over the exact artifact Pages will serve.
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test
+        working-directory: frontend
