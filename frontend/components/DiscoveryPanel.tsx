@@ -70,7 +70,66 @@ export function DiscoveryPanel() {
           </li>
         ))}
       </ul>
+      <WatchlistForm onAdded={() => refreshCandidates()} />
       {error && <p className="mt-3 text-xs text-neg">Discovery failed — is the backend running?</p>}
     </div>
+  );
+
+  function refreshCandidates() {
+    fetch(`${API_URL}/api/discover/candidates`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCandidates)
+      .catch(() => undefined);
+  }
+}
+
+function WatchlistForm({ onAdded }: { onAdded: () => void }) {
+  const [question, setQuestion] = useState("");
+  const [status, setStatus] = useState<"idle" | "busy" | "dup" | "err">("idle");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("busy");
+    try {
+      const res = await fetch(`${API_URL}/api/discover/watchlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      if (res.status === 409) {
+        setStatus("dup");
+        return;
+      }
+      if (!res.ok) throw new Error();
+      setQuestion("");
+      setStatus("idle");
+      onAdded();
+    } catch {
+      setStatus("err");
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+      <input
+        required
+        minLength={10}
+        maxLength={500}
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        placeholder="Point the agents at a signal — phrase it as a yes/no question"
+        aria-label="Add to watchlist"
+        className="min-w-0 flex-1 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-accent"
+      />
+      <button
+        type="submit"
+        disabled={status === "busy"}
+        className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-50"
+      >
+        {status === "busy" ? "Adding…" : "+ Watch"}
+      </button>
+      {status === "dup" && <span className="w-full text-xs text-muted">Already on the watchlist.</span>}
+      {status === "err" && <span className="w-full text-xs text-neg">Couldn&apos;t add — backend running?</span>}
+    </form>
   );
 }
