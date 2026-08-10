@@ -5,6 +5,8 @@ Usage (backend running on localhost:8000, or set VANTA_API):
     python scripts/vanta_cli.py ask "Will X happen?" --category finance
     python scripts/vanta_cli.py resolve 5 --outcome yes
     python scripts/vanta_cli.py alerts
+    python scripts/vanta_cli.py note 5 "Resolution needs the official filing, not press coverage."
+    python scripts/vanta_cli.py notes 5
 """
 
 import argparse
@@ -34,6 +36,11 @@ def main() -> int:
     resolve = sub.add_parser("resolve")
     resolve.add_argument("question_id", type=int)
     resolve.add_argument("--outcome", choices=["yes", "no"], required=True)
+    note = sub.add_parser("note")
+    note.add_argument("question_id", type=int)
+    note.add_argument("body")
+    notes = sub.add_parser("notes")
+    notes.add_argument("question_id", type=int)
     args = parser.parse_args()
 
     with httpx.Client(base_url=API, headers=_headers(), timeout=120) as client:
@@ -65,6 +72,15 @@ def main() -> int:
                 print(f"error {response.status_code}: {response.text}", file=sys.stderr)
                 return 1
             print(json.dumps(response.json()["latest_forecast"], indent=1))
+        elif args.command == "note":
+            response = client.post(f"/api/questions/{args.question_id}/notes", json={"body": args.body})
+            if response.status_code != 201:
+                print(f"error {response.status_code}: {response.text}", file=sys.stderr)
+                return 1
+            print(f"note {response.json()['id']} saved")
+        elif args.command == "notes":
+            for item in client.get(f"/api/questions/{args.question_id}/notes").json():
+                print(f"[{item['created_at'][:10]}] {item['body']}")
     return 0
 
 
