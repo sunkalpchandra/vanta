@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AccuracyChart } from "@/components/AccuracyChart";
 import { CalibrationChart } from "@/components/CalibrationChart";
 import { StatsBar } from "@/components/StatsBar";
@@ -50,7 +51,11 @@ export default async function LeaderboardPage() {
                   const wins = row.vanta_accuracy >= row.market_accuracy;
                   return (
                     <tr key={row.category} className="border-b border-line/60 last:border-0">
-                      <td className="px-5 py-3 font-medium capitalize text-ink">{row.category}</td>
+                      <td className="px-5 py-3 font-medium capitalize">
+                        <Link href={`/category/${row.category}`} className="text-ink hover:text-accent">
+                          {row.category}
+                        </Link>
+                      </td>
                       <td className="num px-5 py-3 text-right text-ink-2">{row.n_resolved}</td>
                       <td className={`num px-5 py-3 text-right font-bold ${wins ? "text-pos" : "text-ink"}`}>
                         {(row.vanta_accuracy * 100).toFixed(0)}%
