@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import AgentTrackRecord, Question
-from ..quant.scoring import brier_score, directional_accuracy, log_score
+from ..quant.scoring import brier_score, calibration_bins, directional_accuracy, log_score
 from ..schemas import AgentLeaderboardRow
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
@@ -34,6 +34,30 @@ def agent_leaderboard(db: Session = Depends(get_db)):
     ]
     rows.sort(key=lambda r: r.brier)
     return rows
+
+
+@router.get("/{agent_name}/calibration")
+def agent_calibration(agent_name: str, db: Session = Depends(get_db)):
+    """Reliability bins for one agent's frozen calls."""
+    if agent_name not in KNOWN_AGENTS:
+        raise HTTPException(status_code=404, detail="unknown agent")
+    pairs = [
+        (record.probability, record.outcome)
+        for record in db.scalars(
+            select(AgentTrackRecord).where(AgentTrackRecord.agent == agent_name)
+        ).all()
+    ]
+    if not pairs:
+        return []
+    return [
+        {
+            "mid": b.mid,
+            "mean_predicted": b.mean_predicted,
+            "observed_rate": b.observed_rate,
+            "count": b.count,
+        }
+        for b in calibration_bins(pairs)
+    ]
 
 
 @router.get("/{agent_name}/records")
