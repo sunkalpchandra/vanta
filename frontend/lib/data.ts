@@ -8,12 +8,14 @@
 import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
+  AgentLeaderboardRow,
   BriefItem,
   CalibrationBin,
   CategoryOut,
   FeedCard,
   HistoryPoint,
   LeaderboardRow,
+  MoverCard,
   PredictionOut,
   QuestionDetail,
   QuestionOut,
@@ -58,3 +60,6 @@ export const getCalibration = () =>
 export const getCategories = () => get<CategoryOut[]>("/api/categories", "categories.json", []);
 export const getPredictions = () =>
   get<PredictionOut[]>("/api/leaderboard/predictions", "predictions.json", []);
+export const getMovers = () => get<MoverCard[]>("/api/feed/movers", "movers.json", []);
+export const getAgentLeaderboard = () =>
+  get<AgentLeaderboardRow[]>("/api/agents/leaderboard", "agents.json", []);
