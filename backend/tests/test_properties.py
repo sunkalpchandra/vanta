@@ -57,3 +57,27 @@ def test_murphy_components_bounded(pairs):
     assert d.reliability >= 0.0
     assert d.resolution >= 0.0
     assert 0.0 <= d.uncertainty <= 0.25
+
+
+@given(probabilities, st.floats(min_value=2.0, max_value=100.0))
+def test_montecarlo_interval_ordered_and_probabilistic_outputs_bounded(p, strength):
+    """True invariants only: the central interval is ordered and outputs are
+    probabilities. The MEAN is deliberately not asserted inside [p5, p95] —
+    hypothesis proved that false for heavy-skew Betas (extreme p, low
+    strength), where rare large draws pull the mean past p95."""
+    from app.quant.montecarlo import simulate
+
+    result = simulate(p, evidence_strength=strength, market_probability=0.5)
+    assert 0.0 <= result.ci_low <= result.ci_high <= 1.0
+    assert 0.0 <= result.mean <= 1.0
+    assert 0.0 <= result.p_above_market <= 1.0
+
+
+@given(st.text(min_size=0, max_size=120), st.text(min_size=0, max_size=120))
+def test_analog_similarity_bounded_and_symmetric_overlap(a, b):
+    from app.quant.analogs import similarity, tokenize
+
+    score_ab = similarity(tokenize(a), "finance", b, "finance")
+    score_ba = similarity(tokenize(b), "finance", a, "finance")
+    assert 0.0 <= score_ab <= 1.0
+    assert score_ab == score_ba  # Jaccard core is symmetric
