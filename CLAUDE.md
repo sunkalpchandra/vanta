@@ -30,6 +30,7 @@ cd frontend && npx next build          # live-mode build
 make static    # snapshot + Pages export (out/)
 ```
 
-Backend tests share one process-level SQLite via the first-imported test module; test modules
-use `os.environ.setdefault` and must tolerate earlier modules' writes (resolved questions,
-discovery-minted questions).
+Backend tests share one process-level SQLite bound in `tests/conftest.py` (the engine binds at
+first app import, and conftest imports before any test module under every ordering). Test
+modules must tolerate earlier modules' writes (resolved questions, discovery-minted questions)
+— e.g. pick seeded questions from the *end* of the newest-first list.
