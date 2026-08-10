@@ -245,3 +245,16 @@ def test_router_endpoints(corpus):
         assert ran.status_code == 200
         assert ran.json()["n_scored"] == 0  # everything eligible is already scored
         assert c.post("/api/backtest/run", params={"horizon": 7, "limit": 9999}).status_code == 422
+
+
+def test_frozen_scorecard_artifact_is_valid():
+    """The committed frozen scorecard must stay loadable and honest: real n,
+    both forecasters scored, and a computed_at stamp."""
+    from app.routers.backtest import FROZEN_PATH, load_frozen
+
+    assert FROZEN_PATH.exists()
+    frozen = load_frozen(7, None)
+    assert frozen is not None and frozen["frozen"] is True
+    assert frozen["n"] > 0 and frozen["computed_at"]
+    assert frozen["vanta_brier"] is not None and frozen["market_brier"] is not None
+    assert load_frozen(7, "technology") is None  # no per-category slices stored
