@@ -234,3 +234,21 @@ Two backfills make the demo feel lived-in, both deterministic by seed:
 mispricings for 10 minutes (Redis via `REDIS_URL`, else in-process);
 `leaderboard.py` computes directional accuracy and Brier scores per category
 from `predictions`; `cards.py` renders self-contained SVG share cards.
+
+## Test pyramid
+
+Three layers, each pinned to what it alone can catch:
+
+- **Backend pytest** (`backend/tests/`): quant invariants (property-based via
+  hypothesis), API contracts, the resolution race, middleware ordering (CORS
+  outermost, cache headers 2xx-only), seed-resume repair, and snapshot-export
+  lockstep with the frontend's expected filenames.
+- **Frontend vitest** (`frontend/lib/*.test.ts`): pure logic — feed filtering,
+  sparkline math, day-merge chart bucketing, starred persistence, formatting.
+- **Playwright e2e** (`frontend/e2e/`): the built static export served under
+  the real `/vanta` base path — the exact artifact GitHub Pages deploys.
+  Covers feed rendering and filtering, question-page chart/debate, keyboard
+  paging, the brief, leaderboards, and the honest demo-corpus labeling.
+
+The e2e server (`e2e/serve.sh`) symlinks `out/` under a `/vanta` prefix so
+basePath-relative links resolve exactly as they do in production.
