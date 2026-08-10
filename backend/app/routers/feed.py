@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
+from datetime import timedelta
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Forecast, Question
-from ..schemas import FeedCard
+from ..models import Forecast, Question, utcnow
+from ..schemas import FeedCard, MoverCard
 
 router = APIRouter(prefix="/api/feed", tags=["feed"])
 
@@ -32,6 +34,41 @@ def _headline(question: Question, forecast: Forecast) -> str:
     if edge <= -0.05:
         return f"The market may be overestimating: {question.question.rstrip('?')}"
     return f"vanta agrees with the market on: {question.question.rstrip('?')}"
+
+
+@router.get("/movers", response_model=list[MoverCard])
+def movers(
+    days: int = Query(3, ge=1, le=30),
+    limit: int = Query(6, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    """Where vanta's own probability moved most over the window — the
+    questions whose evidence picture is changing fastest."""
+    cutoff = utcnow() - timedelta(days=days)
+    cards: list[MoverCard] = []
+    for question, latest in latest_forecasts(db):
+        previous = db.scalar(
+            select(Forecast)
+            .where(Forecast.question_id == question.id, Forecast.timestamp <= cutoff)
+            .order_by(Forecast.timestamp.desc())
+            .limit(1)
+        )
+        if previous is None:
+            continue  # question younger than the window
+        delta = latest.probability - previous.probability
+        cards.append(
+            MoverCard(
+                question_id=question.id,
+                question=question.question,
+                category=question.category,
+                current=latest.probability,
+                previous=previous.probability,
+                delta=round(delta, 4),
+                window_days=days,
+            )
+        )
+    cards.sort(key=lambda c: abs(c.delta), reverse=True)
+    return cards[:limit]
 
 
 @router.get("", response_model=list[FeedCard])
