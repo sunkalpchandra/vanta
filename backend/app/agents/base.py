@@ -18,6 +18,10 @@ class QuestionContext:
     market_volume_usd: float
     market_liquidity: str
     evidence: list[dict] = field(default_factory=list)  # {source, summary, sentiment, impact}
+    # Learned category base rate (static prior blended with the resolved
+    # record). None => agents fall back to the static prior. Computed by the
+    # service layer so the pipeline itself stays DB-free.
+    base_rate: float | None = None
 
 
 @dataclass
