@@ -7,11 +7,19 @@ import type {
   QuestionOut,
 } from "./types";
 
+// Browser-facing base URL: client-side fetches (AskForm) and links the browser
+// follows (share cards).
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Server-side rendering may need a different route to the API than the browser
+// does — inside docker compose, "localhost:8000" points at the web container
+// itself, so SSR uses API_URL_INTERNAL (http://api:8000) when set. In the
+// browser bundle this env var is undefined and we fall back to the public URL.
+const SSR_API_URL = process.env.API_URL_INTERNAL ?? API_URL;
 
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+    const res = await fetch(`${SSR_API_URL}${path}`, { cache: "no-store" });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
   } catch {

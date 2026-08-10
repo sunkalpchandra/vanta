@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TodayDate } from "@/components/TodayDate";
 import { getBrief } from "@/lib/api";
 import { pct, signedPct } from "@/lib/format";
 
@@ -6,18 +7,15 @@ export const dynamic = "force-dynamic";
 
 export default async function BriefPage() {
   const brief = await getBrief();
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-8">
-        <div className="micro-label">{today}</div>
+        <TodayDate />
         <h1 className="mt-2 text-2xl font-bold tracking-tight">vanta Morning Brief</h1>
         <p className="mt-1 text-sm text-ink-2">
-          {brief.length || 5} things the world is most wrong about today.
+          {brief.length > 0
+            ? `${brief.length} things the world is most wrong about today.`
+            : "The things the world is most wrong about today."}
         </p>
       </div>
       {brief.length === 0 ? (

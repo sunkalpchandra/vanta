@@ -43,6 +43,12 @@ export default async function LeaderboardPage() {
                       <td className="num px-5 py-3 text-right text-ink-2">{row.n_resolved}</td>
                       <td className={`num px-5 py-3 text-right font-bold ${wins ? "text-pos" : "text-ink"}`}>
                         {(row.vanta_accuracy * 100).toFixed(0)}%
+                        {/* win state must survive without color perception */}
+                        {wins && (
+                          <span className="ml-1">
+                            ▲<span className="sr-only">vanta leads the market here</span>
+                          </span>
+                        )}
                       </td>
                       <td className="num px-5 py-3 text-right text-ink-2">
                         {(row.market_accuracy * 100).toFixed(0)}%
