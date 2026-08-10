@@ -1,11 +1,30 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..discovery import discover, pending_candidates
-from ..schemas import DiscoveredQuestion, QuestionOut
+from ..models import WatchlistItem
+from ..schemas import DiscoveredQuestion, QuestionOut, WatchlistIn
 
 router = APIRouter(prefix="/api/discover", tags=["discover"])
+
+
+@router.post("/watchlist", status_code=201)
+def add_watchlist_item(body: WatchlistIn, db: Session = Depends(get_db)):
+    """Point autonomous research at a signal worth watching."""
+    exists = db.scalar(select(WatchlistItem).where(WatchlistItem.question == body.question))
+    if exists is not None:
+        raise HTTPException(status_code=409, detail="already on the watchlist")
+    item = WatchlistItem(
+        question=body.question,
+        category=body.category,
+        horizon_days=body.horizon_days,
+        rationale=body.rationale,
+    )
+    db.add(item)
+    db.commit()
+    return {"id": item.id, "question": item.question}
 
 
 @router.get("/candidates")
