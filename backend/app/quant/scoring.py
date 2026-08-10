@@ -42,11 +42,19 @@ def calibration_bins(pairs: list[tuple[float, int]], n_bins: int = 10) -> list[C
     if n_bins < 2:
         raise ValueError("n_bins must be at least 2")
     width = 1.0 / n_bins
+    # Assign by index, not by comparing against accumulated float edges:
+    # 3 * 0.1 == 0.30000000000000004, which would drop p=0.3 into the bin
+    # below its nominal boundary. int(p * n_bins) keeps round quotes (0.3,
+    # 0.7) in the bin they open; p=1.0 folds into the final bin.
+    grouped: dict[int, list[tuple[float, int]]] = {}
+    for p, o in pairs:
+        idx = min(int(p * n_bins), n_bins - 1)
+        grouped.setdefault(idx, []).append((p, o))
+
     bins: list[CalibrationBin] = []
     for i in range(n_bins):
         lo, hi = i * width, (i + 1) * width
-        # Final bin is closed on the right so p=1.0 lands somewhere.
-        members = [(p, o) for p, o in pairs if lo <= p < hi or (i == n_bins - 1 and p == hi)]
+        members = grouped.get(i, [])
         if members:
             mean_pred = sum(p for p, _ in members) / len(members)
             observed = sum(o for _, o in members) / len(members)

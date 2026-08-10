@@ -40,3 +40,13 @@ def test_calibration_empty_bins_are_none():
     bins = calibration_bins([(0.95, 1)], n_bins=10)
     assert bins[0].mean_predicted is None
     assert bins[-1].observed_rate == 1.0
+
+
+def test_calibration_round_quotes_land_in_their_nominal_bin():
+    """Regression: 3*0.1 == 0.30000000000000004, so edge-comparison binning
+    dropped exact round quotes (0.3, 0.6, 0.7) one bin below."""
+    bins = calibration_bins([(0.3, 1), (0.6, 0), (0.7, 1)], n_bins=10)
+    by_count = {i: b for i, b in enumerate(bins) if b.count}
+    assert set(by_count) == {3, 6, 7}
+    for b in by_count.values():
+        assert b.lo <= b.mean_predicted <= b.hi
