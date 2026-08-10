@@ -41,6 +41,22 @@ adheres to [Semantic Versioning](https://semver.org/).
   quotes (0.30, 0.70) into the bin below.
 - Backend test suite is order-independent (suite DB bound in conftest.py).
 
+- Movement analytics: `GET /api/feed/movers` and a biggest-moves strip on the
+  feed; 30-day sparklines on every feed card.
+- Internal forecaster competition: resolution freezes each agent's final call
+  into `agent_track_records`; `GET /api/agents/leaderboard` and the `/agents`
+  page score research vs quant vs market vs historian vs synthesis.
+- Scoring depth: log scores and the Murphy decomposition
+  (reliability/resolution/uncertainty) on `GET /api/stats`.
+- Question search (`?q=`), pagination (`limit`/`offset`), an analogs endpoint,
+  and a DB probe on `/api/health`.
+- Brief upgrades: category diversity (max 2 per category), copy-as-text
+  sharing; two seed-time demo resolutions populate archive + agent pages.
+- Operator controls on question pages (live mode): evidence ingest with
+  immediate re-forecast, resolve YES/NO.
+- Accessibility: skip-to-content link, search labels, mobile-safe nav labels.
+- CI: live-server smoke job.
+
 ### Planned
 
 - Live prediction-market and news ingest replacing the seeded corpus.
