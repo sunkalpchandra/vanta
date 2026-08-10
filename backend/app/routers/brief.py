@@ -31,7 +31,9 @@ def invalidate_brief_cache() -> None:
             import redis
 
             client = redis.Redis.from_url(settings.redis_url)
-            client.delete(*[f"vanta:brief:{n}" for n in range(1, MAX_COUNT + 1)])
+            keys = client.keys("vanta:brief:*")
+            if keys:
+                client.delete(*keys)
         except Exception:
             pass  # cache is best-effort; stale entries expire by TTL anyway
 
@@ -70,13 +72,19 @@ def _cache_set(key: str, value: str) -> None:
 
 
 @router.get("", response_model=list[BriefItem])
-def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depends(get_db)):
-    cache_key = f"vanta:brief:{count}"
+def morning_brief(
+    count: int = Query(5, ge=1, le=MAX_COUNT),
+    category: str | None = Query(None, max_length=50),
+    db: Session = Depends(get_db),
+):
+    cache_key = f"vanta:brief:{count}:{category or 'all'}"
     cached = _cache_get(cache_key)
     if cached:
         return [BriefItem(**item) for item in json.loads(cached)]
 
     pairs = latest_forecasts(db)
+    if category:
+        pairs = [pair for pair in pairs if pair[0].category == category]
     pairs.sort(key=lambda pair: abs(pair[1].probability - pair[0].market_probability), reverse=True)
     # A brief that's five takes on the same sector isn't a brief: cap each
     # category at 2 slots, backfilling with the next-best edges if the cap
