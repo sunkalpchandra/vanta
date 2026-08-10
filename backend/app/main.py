@@ -45,6 +45,19 @@ app = FastAPI(
     description="Autonomous multi-agent forecasting intelligence platform",
     version="0.2.0",
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "questions", "description": "The question lifecycle: ask, forecast, evidence, resolve, notes."},
+        {"name": "feed", "description": "Discovery cards ranked by edge, movers, sparklines, RSS."},
+        {"name": "brief", "description": "The morning brief — top mispricings, optionally per category."},
+        {"name": "leaderboard", "description": "Accuracy and calibration, vanta vs market."},
+        {"name": "agents", "description": "The internal forecaster competition and per-agent receipts."},
+        {"name": "alerts", "description": "Derived attention signals: big moves and live edges."},
+        {"name": "discover", "description": "The autonomous watchlist and question minting."},
+        {"name": "stats", "description": "Corpus-wide scores and the analog-engine backtest."},
+        {"name": "search", "description": "Unified search over live questions and the archive."},
+        {"name": "users", "description": "Operator registration and identity."},
+        {"name": "cards", "description": "Self-contained SVG share cards."},
+    ],
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
