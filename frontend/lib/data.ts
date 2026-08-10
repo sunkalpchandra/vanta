@@ -65,3 +65,5 @@ export const getMovers = () => get<MoverCard[]>("/api/feed/movers", "movers.json
 export const getAgentLeaderboard = () =>
   get<AgentLeaderboardRow[]>("/api/agents/leaderboard", "agents.json", []);
 export const getBacktest = () => get<BacktestOut | null>("/api/quant/backtest", "backtest.json", null);
+export const getSparklines = () =>
+  get<Record<string, number[]>>("/api/feed/sparklines", "sparklines.json", {});
