@@ -116,6 +116,20 @@ export interface AlertItem {
   detail: string;
 }
 
+export interface ChangesOut {
+  from: number | null;
+  to: number | null;
+  delta: number | null;
+  new_evidence: { source: string; summary: string; sentiment: string; impact: number }[];
+}
+
+export interface AgentCalibrationBin {
+  mid: number;
+  mean_predicted: number | null;
+  observed_rate: number | null;
+  count: number;
+}
+
 export interface AgentRecord {
   question_id: number;
   question: string;
