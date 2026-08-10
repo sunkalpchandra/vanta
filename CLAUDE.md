@@ -39,6 +39,11 @@
 - Counterfactual pipeline runs (sensitivity) must set
   `QuestionContext.narratives = False` — never burn LLM calls on numbers-only
   reruns.
+- Playwright specs run against the static export served under `/vanta`
+  (`frontend/e2e/serve.sh`); interactions must tolerate the hydration race —
+  wrap click/fill in `expect(...).toPass()` blocks, not bare waits.
+- The brief cache key includes the category scope
+  (`vanta:brief:{count}:{category|all}`); invalidation deletes by prefix.
 
 ## Verification loop
 
@@ -47,6 +52,7 @@ make lint      # ruff over backend
 make test      # pytest (backend/.venv must exist)
 cd frontend && npx next build          # live-mode build
 make static    # snapshot + Pages export (out/)
+make e2e       # Playwright over the static export (builds it first)
 ```
 
 Backend tests share one process-level SQLite bound in `tests/conftest.py` (the engine binds at
