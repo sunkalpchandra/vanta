@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { type FeedSort, filterFeed } from "@/lib/feedFilter";
 import type { FeedCard } from "@/lib/types";
 import { FeedCardItem } from "./FeedCardItem";
 
@@ -13,7 +14,7 @@ export function FeedExplorer({
 }) {
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"edge" | "confidence">("edge");
+  const [sort, setSort] = useState<FeedSort>("edge");
   const searchRef = useRef<HTMLInputElement>(null);
 
   // "/" focuses search from anywhere on the page (unless already typing).
@@ -33,13 +34,7 @@ export function FeedExplorer({
     () => ["all", ...Array.from(new Set(cards.map((c) => c.category))).sort()],
     [cards],
   );
-  const visible = cards
-    .filter(
-      (c) =>
-        (category === "all" || c.category === category) &&
-        (!query.trim() || c.question.toLowerCase().includes(query.trim().toLowerCase())),
-    )
-    .sort((a, b) => (sort === "edge" ? Math.abs(b.edge) - Math.abs(a.edge) : b.confidence - a.confidence));
+  const visible = filterFeed(cards, category, query, sort);
 
   return (
     <div>
@@ -63,7 +58,7 @@ export function FeedExplorer({
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as "edge" | "confidence")}
+            onChange={(e) => setSort(e.target.value as FeedSort)}
             aria-label="Sort feed"
             className="micro-label rounded-full border border-line bg-surface-2 px-3 py-1.5 !text-ink-2 outline-none focus:border-accent"
           >
