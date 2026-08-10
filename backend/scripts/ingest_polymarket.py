@@ -114,14 +114,16 @@ def fill_prices(session, ckpt: dict, ckpt_path: Path, budget: int) -> None:
     from app.ingest.polymarket import SOURCE, fetch_price_history, price_at
     from app.models import MarketEvent
 
-    after_id = int(ckpt.get("price_after_id") or 0)
+    # Walk NEWEST-first: AMM-era rows (low ids, pre-2022) have no CLOB
+    # history, so ascending order burns the whole budget discovering empties.
+    before_id = int(ckpt.get("price_before_id") or 2**62)
     fetched = filled = 0
     since_commit = 0
 
     def flush() -> None:
         nonlocal since_commit
         session.commit()
-        ckpt["price_after_id"] = after_id
+        ckpt["price_before_id"] = before_id
         save_checkpoint(ckpt_path, ckpt)
         since_commit = 0
 
@@ -134,19 +136,19 @@ def fill_prices(session, ckpt: dict, ckpt_path: Path, budget: int) -> None:
                 MarketEvent.outcome.is_not(None),
                 MarketEvent.price_7d.is_(None),
                 MarketEvent.close_time.is_not(None),
-                MarketEvent.id > after_id,
+                MarketEvent.id < before_id,
             )
-            .order_by(MarketEvent.id)
+            .order_by(MarketEvent.id.desc())
             .limit(200)
         ).all()
         if not events:
-            after_id = 0  # full pass complete: next run retries the empties
+            before_id = 2**62  # full pass complete: next run retries the empties
             break
         for event in events:
             if fetched >= budget:
                 budget_hit = True
                 break
-            after_id = event.id
+            before_id = event.id
             tokens = (event.raw or {}).get("clobTokenIds") or []
             if not tokens:
                 continue
@@ -162,7 +164,7 @@ def fill_prices(session, ckpt: dict, ckpt_path: Path, budget: int) -> None:
             since_commit += 1
             if since_commit >= COMMIT_EVERY_PRICES:
                 flush()
-                print(f"prices: after_id={after_id} fetched={fetched} filled={filled}", flush=True)
+                print(f"prices: before_id={before_id} fetched={fetched} filled={filled}", flush=True)
             time.sleep(PRICE_SLEEP_SECONDS)
     flush()
     print(f"prices done: fetched={fetched} filled={filled} budget={budget}")
