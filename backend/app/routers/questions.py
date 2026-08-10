@@ -70,7 +70,7 @@ def list_questions(
     return db.scalars(stmt).all()
 
 
-@router.post("", response_model=QuestionDetail, status_code=201)
+@router.post("", response_model=QuestionDetail, status_code=201, dependencies=[Depends(require_operator)])
 def ask_question(body: AskRequest, db: Session = Depends(get_db)):
     """User-submitted question: create it and run the full agent pipeline."""
     question = create_question(
@@ -148,10 +148,15 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
 def changes(question_id: int, db: Session = Depends(get_db)):
     """What changed between the latest two forecast runs: the probability
     move and any evidence that arrived in between."""
+    from ..seed import BACKFILL_REASONING
+
     _get_question_or_404(db, question_id)
     latest_two = db.scalars(
         select(Forecast)
-        .where(Forecast.question_id == question_id)
+        .where(
+            Forecast.question_id == question_id,
+            Forecast.reasoning != BACKFILL_REASONING,  # synthetic history is not a "run"
+        )
         .order_by(Forecast.timestamp.desc(), Forecast.id.desc())
         .limit(2)
     ).all()
