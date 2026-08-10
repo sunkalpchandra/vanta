@@ -126,6 +126,37 @@ def create_question(
     return question
 
 
+def evidence_sensitivity(db: Session, question: Question) -> list[dict]:
+    """Leave-one-out evidence importance: re-run the pipeline without each
+    evidence item and report how much the final probability moves. Narratives
+    are suppressed — these counterfactual runs only need the numbers."""
+    evidence = list(question.evidence)
+    if not evidence:
+        return []
+    base_ctx = build_context(db, question, evidence)
+    base_ctx.narratives = False
+    full_probability = run_pipeline(base_ctx).probability
+
+    items: list[dict] = []
+    for leave_out in evidence:
+        remaining = [e for e in evidence if e.id != leave_out.id]
+        ctx = build_context(db, question, remaining)
+        ctx.narratives = False
+        without = run_pipeline(ctx).probability
+        items.append(
+            {
+                "source": leave_out.source,
+                "summary": leave_out.summary,
+                "sentiment": leave_out.sentiment,
+                "impact": leave_out.impact,
+                # Positive delta: this item pushes the forecast UP by this much.
+                "delta": round(full_probability - without, 4),
+            }
+        )
+    items.sort(key=lambda item: abs(item["delta"]), reverse=True)
+    return items
+
+
 class ResolutionError(ValueError):
     """Raised when a question cannot be resolved (already resolved / no forecast)."""
 
