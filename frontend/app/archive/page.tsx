@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getPredictions } from "@/lib/data";
 import { pct, shortDate } from "@/lib/format";
 
@@ -36,7 +37,11 @@ export default async function ArchivePage() {
                 return (
                   <tr key={i} className="border-b border-line/60 last:border-0">
                     <td className="max-w-md px-5 py-3 text-ink">{p.question_text}</td>
-                    <td className="px-5 py-3 capitalize text-ink-2">{p.category}</td>
+                    <td className="px-5 py-3 capitalize">
+                      <Link href={`/category/${p.category}`} className="text-ink-2 hover:text-accent">
+                        {p.category}
+                      </Link>
+                    </td>
                     <td className="num px-5 py-3 text-right text-ink-2">
                       {pct(p.market_probability)}
                       {!vantaCloser && <span className="ml-1 text-accent-2" title="closer call">●</span>}
