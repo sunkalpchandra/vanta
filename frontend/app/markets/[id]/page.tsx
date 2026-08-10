@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { MarketDetail } from "@/components/MarketDetail";
 import { API_URL } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
-import { getMarketsSample, getMarketPriceHistory } from "@/lib/data";
+import { getMarketsSample, getMarketPriceHistory, getMarketForecast } from "@/lib/data";
 import { buildPriceSeries } from "@/lib/marketDetail";
 import { pct } from "@/lib/format";
 import type { MarketItem } from "@/lib/trader";
@@ -54,10 +54,13 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const market = await loadMarket(id);
   if (!market) notFound();
-  const rows = buildPriceSeries(await getMarketPriceHistory(id));
+  const [rows, forecast] = await Promise.all([
+    getMarketPriceHistory(id).then(buildPriceSeries),
+    getMarketForecast(id),
+  ]);
   return (
     <div className="mx-auto max-w-3xl">
-      <MarketDetail market={market} initialRows={rows} />
+      <MarketDetail market={market} initialRows={rows} forecast={forecast} />
     </div>
   );
 }

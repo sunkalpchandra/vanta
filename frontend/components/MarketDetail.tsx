@@ -6,6 +6,8 @@ import { CategoryBadge } from "@/components/Badges";
 import { MarketPriceChart } from "@/components/MarketPriceChart";
 import { StatTile } from "@/components/StatTile";
 import { TradeTicket } from "@/components/TradeTicket";
+import { MarketForecast, type MarketForecastData } from "@/components/MarketForecast";
+import { WatchButton } from "@/components/WatchButton";
 import { IS_STATIC } from "@/lib/config";
 import { pct, shortDate } from "@/lib/format";
 import { getMarketHistory, type PriceRow } from "@/lib/marketDetail";
@@ -80,7 +82,15 @@ function SettledSummary({ market }: { market: MarketItem }) {
 /** Detail view for one real-event market: header + synced YES-price chart, then
  * the inline trade ticket (active) or the settlement summary (resolved).
  * History is fetched client-side on mount. */
-export function MarketDetail({ market, initialRows }: { market: MarketItem; initialRows?: PriceRow[] }) {
+export function MarketDetail({
+  market,
+  initialRows,
+  forecast,
+}: {
+  market: MarketItem;
+  initialRows?: PriceRow[];
+  forecast?: MarketForecastData | null;
+}) {
   const [history, setHistory] = useState<HistoryState>(
     initialRows && initialRows.length > 0
       ? { status: "ready", rows: initialRows }
@@ -129,6 +139,7 @@ export function MarketDetail({ market, initialRows }: { market: MarketItem; init
           ) : days !== null ? (
             <span className="micro-label">· closes {closesLabel(days)}</span>
           ) : null}
+          {!settled && <WatchButton eventId={market.id} />}
         </div>
         <h1 className="mt-3 max-w-3xl text-2xl font-bold leading-snug tracking-tight">
           {market.question}
@@ -154,6 +165,10 @@ export function MarketDetail({ market, initialRows }: { market: MarketItem; init
       <div className="card mt-4 p-5">
         <div className="micro-label mb-3">YES price — synced venue history</div>
         <ChartArea history={history} />
+      </div>
+
+      <div className="mt-4">
+        <MarketForecast eventId={market.id} initial={forecast} />
       </div>
 
       <div className="card mt-4 p-5">
