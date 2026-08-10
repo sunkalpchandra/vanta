@@ -1,8 +1,11 @@
 import { PortfolioView } from "@/components/PortfolioView";
+import { TraderLeaderboard } from "@/components/TraderLeaderboard";
+import { getTraderBoard } from "@/lib/data";
 
 export const metadata = { title: "portfolio — vanta" };
 
-export default function PortfolioPage() {
+export default async function PortfolioPage() {
+  const board = await getTraderBoard();
   return (
     <div>
       <div className="mb-8">
@@ -13,6 +16,10 @@ export default function PortfolioPage() {
         </p>
       </div>
       <PortfolioView />
+      <section className="mt-10">
+        <div className="micro-label mb-3">Trader leaderboard — lifetime P&amp;L vs ⓥ10,000</div>
+        <TraderLeaderboard board={board} />
+      </section>
     </div>
   );
 }
