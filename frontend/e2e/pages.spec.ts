@@ -36,8 +36,8 @@ test("archive lists resolved calls with outcomes", async ({ page }) => {
   expect(await rows.count()).toBeGreaterThanOrEqual(5);
 });
 
-test("digest renders category tiles", async ({ page }) => {
+test("digest shows the settled strip", async ({ page }) => {
   await page.goto("digest/");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText(/technology/i).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/digest/i);
+  await expect(page.getByText(/recently settled/i)).toBeVisible();
 });
