@@ -38,8 +38,18 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/discover/candidates` | Watchlist questions not yet covered by the question base. |
+| `GET /api/discover/candidates` | Watchlist questions not yet covered by the question base (user items first). |
 | `POST /api/discover?count=3` | Mint up to `count` (1–5) new questions and forecast each. Idempotent — covered questions are skipped. |
+| `GET /api/discover/watchlist` · `POST` · `DELETE /{id}` | User-added signals for the agents to watch. POST returns 409 on duplicates. |
+
+## Self-measurement
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/quant/backtest` | Leave-one-out backtest of the analog engine over the reference corpus, with the base-rate benchmark. |
+| `GET /api/brief/rss` | The morning brief as RSS. |
+| `GET /api/feed?sort=edge\|confidence\|volume` | Feed re-ranking. |
+| `GET /api/leaderboard/calibration?category=` | Reliability bins scoped to one category. |
 
 ## Meta
 
