@@ -44,3 +44,16 @@ test("digest shows the settled strip", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/digest/i);
   await expect(page.getByText(/recently settled/i)).toBeVisible();
 });
+
+test("chat page renders the static-mode example honestly", async ({ page }) => {
+  await page.goto("chat/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/live agent reasoning/i);
+  await expect(page.getByText(/static demo — chat needs the live backend/i)).toBeVisible();
+  await expect(page.getByText(/example output/i).first()).toBeVisible();
+});
+
+test("leaderboard leads with the real-backtest section", async ({ page }) => {
+  await page.goto("leaderboard/");
+  await expect(page.getByText(/real-market backtest/i).first()).toBeVisible();
+  await expect(page.getByText(/synthetic demo corpus below/i)).toBeVisible();
+});
