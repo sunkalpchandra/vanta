@@ -38,6 +38,7 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         "predictions.json": "/api/leaderboard/predictions",
         "agents.json": "/api/agents/leaderboard",
         "movers.json": "/api/feed/movers",
+        "backtest.json": "/api/quant/backtest",
         "stats.json": "/api/stats",
         "categories.json": "/api/categories",
     }
@@ -56,6 +57,11 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         card_path = out_dir / "cards" / f"{qid}.svg"
         card_path.write_text(card.text)
         written.append(str(card_path.relative_to(out_dir)))
+
+    rss = client.get("/api/brief/rss")
+    rss.raise_for_status()
+    (out_dir / "brief.xml").write_text(rss.text)
+    written.append("brief.xml")
 
     dump(data / "meta.json", {"mode": "static-demo", "questions": len(questions)})
     return written
