@@ -89,7 +89,9 @@ class Prediction(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     # Null for the seeded reference corpus; set when a live question resolves.
-    question_id: Mapped[int | None] = mapped_column(ForeignKey("questions.id"), nullable=True)
+    # Unique: one settled prediction per question, enforced by the database as
+    # the backstop against concurrent resolves (NULLs don't collide).
+    question_id: Mapped[int | None] = mapped_column(ForeignKey("questions.id"), nullable=True, unique=True)
     question_text: Mapped[str] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(50), index=True)
     market_probability: Mapped[float] = mapped_column(Float)
