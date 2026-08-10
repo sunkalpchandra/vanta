@@ -18,6 +18,9 @@ class User(Base):
     # Operator credential ("vk_..."), shown once at creation. Gating is off by
     # default (demo); REQUIRE_API_KEY=1 enforces it on mutations.
     api_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # Play-money trading balance in vanta credits (ⓥ). Virtual currency only —
+    # this is paper trading against real venue prices, never real money.
+    balance: Mapped[float] = mapped_column(Float, default=10_000.0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -169,6 +172,11 @@ class MarketEvent(Base):
     price_30d: Mapped[float | None] = mapped_column(Float, nullable=True)
     raw: Mapped[dict] = mapped_column(JSON, default=dict)
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Live-trading surface: the sync engine keeps these fresh for active
+    # events and flips active off at settlement/delisting.
+    active: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    yes_price: Mapped[float | None] = mapped_column(Float, nullable=True)  # current venue YES price
+    last_synced: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class BacktestPrediction(Base):
@@ -207,3 +215,37 @@ class Prediction(Base):
     vanta_probability: Mapped[float] = mapped_column(Float)
     outcome: Mapped[int] = mapped_column(Integer)  # 1 = happened, 0 = didn't
     resolved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Position(Base):
+    """A trader's open (or settled) stake in one market event. Play money:
+    entry at the synced venue price, settled at the venue outcome."""
+
+    __tablename__ = "positions"
+    __table_args__ = (Index("ix_positions_user_event_side", "user_id", "event_id", "side", unique=True),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    side: Mapped[str] = mapped_column(String(3))  # yes | no
+    shares: Mapped[float] = mapped_column(Float, default=0.0)
+    avg_price: Mapped[float] = mapped_column(Float, default=0.0)  # per-share cost basis
+    realized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    settled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Trade(Base):
+    """Append-only execution log — every buy/sell at the then-current price."""
+
+    __tablename__ = "trades"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    side: Mapped[str] = mapped_column(String(3))  # yes | no
+    action: Mapped[str] = mapped_column(String(4))  # buy | sell
+    shares: Mapped[float] = mapped_column(Float)
+    price: Mapped[float] = mapped_column(Float)  # execution price per share
+    cost: Mapped[float] = mapped_column(Float)  # signed balance delta (negative = spent)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
