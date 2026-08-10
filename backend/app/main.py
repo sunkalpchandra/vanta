@@ -42,6 +42,17 @@ app.include_router(discover.router)
 app.include_router(agents.router)
 
 
+@app.get("/api/meta")
+def meta():
+    """Build identity for clients and monitors."""
+    return {
+        "name": "vanta",
+        "version": app.version,
+        "docs": "/docs",
+        "source": "https://github.com/sunkalpchandra/vanta",
+    }
+
+
 @app.get("/api/health")
 def health():
     from sqlalchemy import text
