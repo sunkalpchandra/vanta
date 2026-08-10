@@ -22,13 +22,18 @@ from .routers import (
     cards,
     chat,
     discover,
+    export_data,
     feed,
     leaderboard,
+    market_forecast,
     market_history,
+    market_stats,
+    market_watch,
     markets,
     questions,
     search,
     stats,
+    trader_profile,
     users,
 )
 from .seed import seed_if_empty
@@ -184,6 +189,11 @@ app.include_router(backtest.router)
 app.include_router(chat.router)
 app.include_router(markets.router)
 app.include_router(market_history.router)
+app.include_router(market_forecast.router)
+app.include_router(market_stats.router)
+app.include_router(market_watch.router)
+app.include_router(trader_profile.router)
+app.include_router(export_data.router)
 app.include_router(activity.router)
 
 
