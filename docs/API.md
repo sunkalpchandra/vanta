@@ -6,7 +6,8 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/questions` | All questions, newest first. `?category=` filters. |
+| `GET /api/questions` | All questions, newest first. Filters: `?category=`, `?resolved=`, `?q=` (text search), `?limit=&offset=` (pagination). |
+| `GET /api/questions/{id}/analogs` | The quant agent's historical analog matches from the latest run. |
 | `POST /api/questions` | Ask a question — runs the full seven-agent pipeline. Body: `{question, category, horizon_days, market_probability?}`. `category` is one of `technology · finance · politics · science · sports · crypto`. Without `market_probability`, the category base rate stands in (flagged by zero volume / low liquidity). |
 | `GET /api/questions/{id}` | Question + latest forecast + evidence + the full agent debate. |
 | `GET /api/questions/{id}/history` | Probability time series (append-only forecast history). |
@@ -19,8 +20,9 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 | Endpoint | Description |
 |---|---|
 | `GET /api/feed` | Discovery cards for live questions, ranked by absolute edge. `?limit=` caps. |
-| `GET /api/brief?count=5` | Morning brief — the top mispricings (`count` 1–20). Cached 10 minutes. |
-| `GET /api/cards/{id}.svg` | Self-contained shareable prediction card (SVG). |
+| `GET /api/feed/movers?days=3&limit=6` | Questions whose vanta probability moved most over the window. |
+| `GET /api/brief?count=5` | Morning brief — top mispricings, max 2 per category (`count` 1–20). Cached 10 minutes; invalidated on resolution. |
+| `GET /api/cards/{id}.svg` | Self-contained shareable prediction card (SVG). RESOLVED stamp once settled. |
 
 ## Track record
 
@@ -28,8 +30,9 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 |---|---|
 | `GET /api/leaderboard` | Directional accuracy + Brier by category, vanta vs market. |
 | `GET /api/leaderboard/calibration` | Reliability-diagram bins (10) for vanta and market. |
-| `GET /api/stats` | System-level: live count, resolved count, accuracy, Brier, average live edge, LLM flag. |
+| `GET /api/stats` | System-level: live/resolved counts, accuracy, Brier, log scores, Murphy decomposition (reliability/resolution/uncertainty), average live edge. |
 | `GET /api/categories` | Coverage and long-run base rate per category. |
+| `GET /api/agents/leaderboard` | The internal forecaster competition — each agent's frozen calls scored against outcomes, sorted by Brier. |
 
 ## Autonomous research
 
