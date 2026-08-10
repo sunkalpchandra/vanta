@@ -98,6 +98,31 @@ export interface MoverCard {
   window_days: number;
 }
 
+export interface RelatedQuestion {
+  id: number;
+  question: string;
+  category: string;
+  similarity: number;
+  resolved: boolean;
+}
+
+export interface AlertItem {
+  kind: "edge" | "move";
+  question_id: number;
+  question: string;
+  category: string;
+  value: number;
+  detail: string;
+}
+
+export interface AgentRecord {
+  question_id: number;
+  question: string;
+  probability: number;
+  outcome: number;
+  abs_error: number;
+}
+
 export interface SensitivityItem {
   source: string;
   summary: string;
