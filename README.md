@@ -1,5 +1,11 @@
 # vanta — Autonomous Intelligence Engine for Probabilistic Forecasting
 
+[![ci](https://github.com/sunkalpchandra/vanta/actions/workflows/ci.yml/badge.svg)](https://github.com/sunkalpchandra/vanta/actions/workflows/ci.yml)
+[![deploy-pages](https://github.com/sunkalpchandra/vanta/actions/workflows/pages.yml/badge.svg)](https://github.com/sunkalpchandra/vanta/actions/workflows/pages.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**Live demo:** [sunkalpchandra.github.io/vanta](https://sunkalpchandra.github.io/vanta/) — a static snapshot of the full system (feed, agent debates, calibration, morning brief). Asking new questions needs the live backend below.
+
 > *"What does the world currently believe will happen, and what does our intelligence system think is actually going to happen?"*
 
 vanta is a multi-agent forecasting intelligence platform. It watches questions about the future — rate cuts, earnings beats, model releases, elections, breakthroughs — and for each one produces a calibrated probability, a confidence score, the full internal agent debate, and the **edge**: where vanta's estimate diverges from the prediction-market consensus.
@@ -68,6 +74,21 @@ The backend uses SQLite by default and seeds itself on first boot: 12 live quest
 ```bash
 docker compose up --build
 # web: http://localhost:3000 · api: http://localhost:8000 · postgres + redis included
+```
+
+## GitHub Pages demo
+
+GitHub Pages can't run the FastAPI backend, so the demo is a **baked snapshot**:
+`backend/scripts/export_snapshot.py` boots the seeded app and walks the read API into
+`frontend/public/data/*.json` + `frontend/public/cards/*.svg`, and the frontend builds with
+`NEXT_PUBLIC_STATIC_MODE=1` — same pages, same charts, data read from the snapshot instead of
+the network. `.github/workflows/pages.yml` re-bakes and redeploys on every push to `main`.
+
+```bash
+# reproduce the Pages build locally
+python backend/scripts/export_snapshot.py --out frontend/public
+cd frontend && NEXT_PUBLIC_STATIC_MODE=1 NEXT_PUBLIC_BASE_PATH=/vanta npx next build
+# artifact in frontend/out/
 ```
 
 ## Configuration
