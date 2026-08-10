@@ -1,225 +1,225 @@
 {
- "computed_at": "2026-08-10T16:57:28.557278Z",
+ "computed_at": "2026-08-10T18:33:42.145647Z",
  "horizons": {
   "7": {
    "horizon_days": 7,
    "category": null,
-   "n": 2117,
+   "n": 2974,
    "n_resolved_corpus": 106652,
-   "coverage": 0.0198,
-   "vanta_brier": 0.1268,
-   "market_brier": 0.127,
-   "vanta_log": 0.3773,
-   "market_log": 0.3751,
-   "vanta_accuracy": 0.8115,
-   "market_accuracy": 0.803,
-   "base_rate_brier": 0.1957,
-   "outcome_base_rate": 0.2669,
+   "coverage": 0.0279,
+   "vanta_brier": 0.1327,
+   "market_brier": 0.1338,
+   "vanta_log": 0.3977,
+   "market_log": 0.3985,
+   "vanta_accuracy": 0.807,
+   "market_accuracy": 0.7979,
+   "base_rate_brier": 0.1927,
+   "outcome_base_rate": 0.2606,
    "sources": {
-    "polymarket": 2117
+    "polymarket": 2974
    },
-   "median_volume_usd": 11491.83,
+   "median_volume_usd": 10814.23,
    "calibration": [
     {
      "mid": 0.05,
-     "vanta_mean_predicted": 0.0209,
-     "vanta_observed_rate": 0.009,
-     "vanta_count": 776,
-     "market_mean_predicted": 0.0165,
-     "market_observed_rate": 0.0088,
-     "market_count": 791
+     "vanta_mean_predicted": 0.0256,
+     "vanta_observed_rate": 0.0176,
+     "vanta_count": 1077,
+     "market_mean_predicted": 0.0204,
+     "market_observed_rate": 0.0182,
+     "market_count": 1097
     },
     {
      "mid": 0.15,
-     "vanta_mean_predicted": 0.1505,
-     "vanta_observed_rate": 0.1049,
-     "vanta_count": 143,
-     "market_mean_predicted": 0.1458,
-     "market_observed_rate": 0.1119,
-     "market_count": 134
+     "vanta_mean_predicted": 0.1503,
+     "vanta_observed_rate": 0.1223,
+     "vanta_count": 229,
+     "market_mean_predicted": 0.1443,
+     "market_observed_rate": 0.1262,
+     "market_count": 214
     },
     {
      "mid": 0.25,
      "vanta_mean_predicted": 0.2516,
-     "vanta_observed_rate": 0.28,
-     "vanta_count": 200,
-     "market_mean_predicted": 0.2489,
-     "market_observed_rate": 0.2768,
-     "market_count": 177
+     "vanta_observed_rate": 0.272,
+     "vanta_count": 261,
+     "market_mean_predicted": 0.2487,
+     "market_observed_rate": 0.2661,
+     "market_count": 233
     },
     {
      "mid": 0.35,
-     "vanta_mean_predicted": 0.3552,
-     "vanta_observed_rate": 0.299,
-     "vanta_count": 204,
-     "market_mean_predicted": 0.3464,
-     "market_observed_rate": 0.2774,
-     "market_count": 155
+     "vanta_mean_predicted": 0.3559,
+     "vanta_observed_rate": 0.3028,
+     "vanta_count": 251,
+     "market_mean_predicted": 0.3465,
+     "market_observed_rate": 0.2827,
+     "market_count": 191
     },
     {
      "mid": 0.45,
-     "vanta_mean_predicted": 0.469,
-     "vanta_observed_rate": 0.3966,
-     "vanta_count": 522,
-     "market_mean_predicted": 0.4646,
-     "market_observed_rate": 0.3404,
-     "market_count": 332
+     "vanta_mean_predicted": 0.4627,
+     "vanta_observed_rate": 0.378,
+     "vanta_count": 799,
+     "market_mean_predicted": 0.469,
+     "market_observed_rate": 0.3362,
+     "market_count": 577
     },
     {
      "mid": 0.55,
-     "vanta_mean_predicted": 0.5435,
-     "vanta_observed_rate": 0.604,
-     "vanta_count": 101,
-     "market_mean_predicted": 0.5175,
-     "market_observed_rate": 0.4829,
-     "market_count": 321
+     "vanta_mean_predicted": 0.5409,
+     "vanta_observed_rate": 0.6154,
+     "vanta_count": 130,
+     "market_mean_predicted": 0.521,
+     "market_observed_rate": 0.4861,
+     "market_count": 397
     },
     {
      "mid": 0.65,
-     "vanta_mean_predicted": 0.6531,
-     "vanta_observed_rate": 0.7333,
-     "vanta_count": 45,
-     "market_mean_predicted": 0.6346,
-     "market_observed_rate": 0.7143,
-     "market_count": 56
+     "vanta_mean_predicted": 0.6508,
+     "vanta_observed_rate": 0.6769,
+     "vanta_count": 65,
+     "market_mean_predicted": 0.6393,
+     "market_observed_rate": 0.6912,
+     "market_count": 68
     },
     {
      "mid": 0.75,
-     "vanta_mean_predicted": 0.7467,
-     "vanta_observed_rate": 0.9762,
-     "vanta_count": 42,
-     "market_mean_predicted": 0.7486,
-     "market_observed_rate": 0.8333,
-     "market_count": 48
+     "vanta_mean_predicted": 0.7498,
+     "vanta_observed_rate": 0.9138,
+     "vanta_count": 58,
+     "market_mean_predicted": 0.7475,
+     "market_observed_rate": 0.7656,
+     "market_count": 64
     },
     {
      "mid": 0.85,
-     "vanta_mean_predicted": 0.8493,
-     "vanta_observed_rate": 1.0,
-     "vanta_count": 47,
-     "market_mean_predicted": 0.852,
-     "market_observed_rate": 1.0,
-     "market_count": 49
+     "vanta_mean_predicted": 0.8512,
+     "vanta_observed_rate": 0.9649,
+     "vanta_count": 57,
+     "market_mean_predicted": 0.8508,
+     "market_observed_rate": 0.9385,
+     "market_count": 65
     },
     {
      "mid": 0.95,
-     "vanta_mean_predicted": 0.9515,
+     "vanta_mean_predicted": 0.9484,
      "vanta_observed_rate": 1.0,
-     "vanta_count": 37,
-     "market_mean_predicted": 0.952,
+     "vanta_count": 47,
+     "market_mean_predicted": 0.9517,
      "market_observed_rate": 1.0,
-     "market_count": 54
+     "market_count": 68
     }
    ]
   },
   "30": {
    "horizon_days": 30,
    "category": null,
-   "n": 790,
+   "n": 982,
    "n_resolved_corpus": 106652,
-   "coverage": 0.0074,
-   "vanta_brier": 0.0858,
-   "market_brier": 0.0858,
-   "vanta_log": 0.2765,
-   "market_log": 0.2722,
-   "vanta_accuracy": 0.8848,
-   "market_accuracy": 0.8671,
-   "base_rate_brier": 0.1358,
-   "outcome_base_rate": 0.162,
+   "coverage": 0.0092,
+   "vanta_brier": 0.0946,
+   "market_brier": 0.0949,
+   "vanta_log": 0.3057,
+   "market_log": 0.3043,
+   "vanta_accuracy": 0.8707,
+   "market_accuracy": 0.8585,
+   "base_rate_brier": 0.1418,
+   "outcome_base_rate": 0.1711,
    "sources": {
-    "polymarket": 790
+    "polymarket": 982
    },
-   "median_volume_usd": 11165.15,
+   "median_volume_usd": 14961.78,
    "calibration": [
     {
      "mid": 0.05,
-     "vanta_mean_predicted": 0.0301,
-     "vanta_observed_rate": 0.0083,
-     "vanta_count": 363,
-     "market_mean_predicted": 0.0273,
-     "market_observed_rate": 0.0126,
-     "market_count": 397
+     "vanta_mean_predicted": 0.0327,
+     "vanta_observed_rate": 0.0244,
+     "vanta_count": 450,
+     "market_mean_predicted": 0.0295,
+     "market_observed_rate": 0.0284,
+     "market_count": 493
     },
     {
      "mid": 0.15,
-     "vanta_mean_predicted": 0.1415,
-     "vanta_observed_rate": 0.053,
-     "vanta_count": 132,
-     "market_mean_predicted": 0.1405,
-     "market_observed_rate": 0.0727,
-     "market_count": 110
+     "vanta_mean_predicted": 0.1409,
+     "vanta_observed_rate": 0.0698,
+     "vanta_count": 172,
+     "market_mean_predicted": 0.1394,
+     "market_observed_rate": 0.0845,
+     "market_count": 142
     },
     {
      "mid": 0.25,
-     "vanta_mean_predicted": 0.2425,
-     "vanta_observed_rate": 0.1455,
-     "vanta_count": 55,
-     "market_mean_predicted": 0.2456,
-     "market_observed_rate": 0.1163,
-     "market_count": 43
+     "vanta_mean_predicted": 0.245,
+     "vanta_observed_rate": 0.1528,
+     "vanta_count": 72,
+     "market_mean_predicted": 0.2448,
+     "market_observed_rate": 0.1228,
+     "market_count": 57
     },
     {
      "mid": 0.35,
-     "vanta_mean_predicted": 0.3458,
-     "vanta_observed_rate": 0.2381,
-     "vanta_count": 42,
-     "market_mean_predicted": 0.3433,
-     "market_observed_rate": 0.2571,
-     "market_count": 35
+     "vanta_mean_predicted": 0.3455,
+     "vanta_observed_rate": 0.2586,
+     "vanta_count": 58,
+     "market_mean_predicted": 0.343,
+     "market_observed_rate": 0.2885,
+     "market_count": 52
     },
     {
      "mid": 0.45,
-     "vanta_mean_predicted": 0.4661,
-     "vanta_observed_rate": 0.3034,
-     "vanta_count": 89,
-     "market_mean_predicted": 0.4578,
-     "market_observed_rate": 0.24,
-     "market_count": 50
+     "vanta_mean_predicted": 0.4655,
+     "vanta_observed_rate": 0.3299,
+     "vanta_count": 97,
+     "market_mean_predicted": 0.4587,
+     "market_observed_rate": 0.2632,
+     "market_count": 57
     },
     {
      "mid": 0.55,
-     "vanta_mean_predicted": 0.5473,
-     "vanta_observed_rate": 0.4412,
-     "vanta_count": 34,
-     "market_mean_predicted": 0.5269,
-     "market_observed_rate": 0.3636,
-     "market_count": 66
+     "vanta_mean_predicted": 0.5447,
+     "vanta_observed_rate": 0.4,
+     "vanta_count": 40,
+     "market_mean_predicted": 0.5294,
+     "market_observed_rate": 0.3699,
+     "market_count": 73
     },
     {
      "mid": 0.65,
-     "vanta_mean_predicted": 0.6438,
-     "vanta_observed_rate": 0.6429,
-     "vanta_count": 28,
-     "market_mean_predicted": 0.6461,
-     "market_observed_rate": 0.5484,
-     "market_count": 31
+     "vanta_mean_predicted": 0.6422,
+     "vanta_observed_rate": 0.6667,
+     "vanta_count": 33,
+     "market_mean_predicted": 0.6465,
+     "market_observed_rate": 0.5429,
+     "market_count": 35
     },
     {
      "mid": 0.75,
-     "vanta_mean_predicted": 0.7462,
-     "vanta_observed_rate": 0.7273,
-     "vanta_count": 22,
-     "market_mean_predicted": 0.7466,
-     "market_observed_rate": 0.7273,
-     "market_count": 22
+     "vanta_mean_predicted": 0.7473,
+     "vanta_observed_rate": 0.7143,
+     "vanta_count": 28,
+     "market_mean_predicted": 0.7461,
+     "market_observed_rate": 0.7037,
+     "market_count": 27
     },
     {
      "mid": 0.85,
-     "vanta_mean_predicted": 0.8479,
-     "vanta_observed_rate": 0.9167,
-     "vanta_count": 12,
-     "market_mean_predicted": 0.8418,
-     "market_observed_rate": 0.7647,
-     "market_count": 17
+     "vanta_mean_predicted": 0.8528,
+     "vanta_observed_rate": 0.8421,
+     "vanta_count": 19,
+     "market_mean_predicted": 0.8428,
+     "market_observed_rate": 0.7727,
+     "market_count": 22
     },
     {
      "mid": 0.95,
      "vanta_mean_predicted": 0.9599,
      "vanta_observed_rate": 1.0,
      "vanta_count": 13,
-     "market_mean_predicted": 0.9575,
-     "market_observed_rate": 1.0,
-     "market_count": 19
+     "market_mean_predicted": 0.9489,
+     "market_observed_rate": 0.9583,
+     "market_count": 24
     }
    ]
   }
