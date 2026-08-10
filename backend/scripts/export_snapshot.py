@@ -99,6 +99,17 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     (out_dir / "track-record.csv").write_text(csv_response.text)
     written.append("track-record.csv")
 
+    # Real-market backtest scorecards: bake honestly — a 404 (no rows yet)
+    # becomes an explicit unavailable sentinel, never a fake result.
+    for horizon in (7, 30):
+        response = client.get(f"/api/backtest/real?horizon={horizon}")
+        payload = (
+            {"available": True, **response.json()}
+            if response.status_code == 200
+            else {"available": False}
+        )
+        dump(data / f"backtest-real-{horizon}.json", payload)
+
     dump(
         data / "meta.json",
         {"mode": "static-demo", "questions": len(questions), "commit": os.environ.get("GIT_SHA")},

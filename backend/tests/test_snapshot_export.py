@@ -36,6 +36,8 @@ DATA_TS_SNAPSHOT_NAMES = [
     "sparklines",
     "alerts",
     "meta",
+    "backtest-real-7",
+    "backtest-real-30",
 ]
 
 
