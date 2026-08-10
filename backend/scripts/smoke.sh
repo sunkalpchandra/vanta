@@ -24,8 +24,14 @@ check /api/leaderboard/calibration
 check /api/leaderboard/predictions
 check /api/stats
 check /api/categories
+check /api/agents/leaderboard
+check /api/feed/movers
+check /api/quant/backtest
+check /api/brief/rss
 check /api/discover/candidates
+check /api/discover/watchlist
 check "/api/brief?count=0" 422
+check "/api/feed?sort=bogus" 422
 check /api/questions/99999 404
 
 QID=$(curl -s "$BASE/api/questions" | python3 -c "import json,sys; print(json.load(sys.stdin)[-1]['id'])")
