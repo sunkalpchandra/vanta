@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AgentCalibrationChart } from "@/components/AgentCalibrationChart";
 import { IS_STATIC } from "@/lib/config";
-import { getAgentRecords } from "@/lib/data";
+import { getAgentCalibration, getAgentRecords } from "@/lib/data";
 import { pct } from "@/lib/format";
 
 const KNOWN_AGENTS = ["research", "quant", "market", "sentiment", "historian", "synthesis"];
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
 export default async function AgentRecordsPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
   if (!KNOWN_AGENTS.includes(name)) notFound();
-  const records = await getAgentRecords(name);
+  const [records, calibration] = await Promise.all([getAgentRecords(name), getAgentCalibration(name)]);
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-8">
@@ -28,6 +29,12 @@ export default async function AgentRecordsPage({ params }: { params: Promise<{ n
           Every frozen call this agent made on a question that later resolved.
         </p>
       </div>
+      {calibration.length > 0 && (
+        <div className="card mb-4 p-5">
+          <div className="micro-label mb-3">Calibration — observed vs predicted</div>
+          <AgentCalibrationChart bins={calibration} />
+        </div>
+      )}
       {records.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">No resolved calls yet.</div>
       ) : (
