@@ -99,6 +99,9 @@ def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depen
                 break
             if id(pair) not in chosen:
                 picked.append(pair)
+    # Backfill can append a skipped high-edge pair after lower-edge picks;
+    # ranks must stay monotonic in |edge| for the UI, RSS, and copy text.
+    picked.sort(key=lambda pair: abs(pair[1].probability - pair[0].market_probability), reverse=True)
     items = []
     for rank, (q, f) in enumerate(picked[:count], start=1):
         edge = f.probability - q.market_probability
