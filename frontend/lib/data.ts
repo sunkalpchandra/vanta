@@ -21,6 +21,7 @@ import type {
   PredictionOut,
   QuestionDetail,
   QuestionOut,
+  SensitivityItem,
   StatsOut,
 } from "./types";
 
@@ -70,3 +71,9 @@ export const getAgentLeaderboard = () =>
 export const getBacktest = () => get<BacktestOut | null>("/api/quant/backtest", "backtest.json", null);
 export const getSparklines = () =>
   get<Record<string, number[]>>("/api/feed/sparklines", "sparklines.json", {});
+export const getSensitivity = (id: string) =>
+  get<{ items: SensitivityItem[] }>(
+    `/api/questions/${id}/sensitivity`,
+    `sensitivity/${id}.json`,
+    { items: [] },
+  );
