@@ -7,7 +7,16 @@ from sqlalchemy.orm import Session
 from .agents.base import QuestionContext
 from .agents.historian import base_rate_for
 from .agents.orchestrator import PipelineResult, run_pipeline
-from .models import AgentReport, AgentTrackRecord, Evidence, Forecast, Prediction, Question, utcnow
+from .models import (
+    AgentReport,
+    AgentTrackRecord,
+    Evidence,
+    Forecast,
+    MarketSnapshot,
+    Prediction,
+    Question,
+    utcnow,
+)
 
 
 def learned_base_rate(db: Session, category: str, pseudo_count: float = 20.0) -> float:
@@ -119,6 +128,21 @@ def create_question(
 
 class ResolutionError(ValueError):
     """Raised when a question cannot be resolved (already resolved / no forecast)."""
+
+
+def record_market_price(db: Session, question: Question, probability: float) -> MarketSnapshot:
+    """Ingest a new market price: append a snapshot and mirror it onto the
+    question. The pipeline is NOT re-run here — callers decide whether the
+    move warrants a re-forecast (the operator UI does both)."""
+    if question.resolved:
+        raise ResolutionError("question is resolved; the market is settled")
+    snapshot = MarketSnapshot(question_id=question.id, probability=probability)
+    question.market_probability = probability
+    db.add(snapshot)
+    db.commit()
+    db.refresh(snapshot)
+    db.refresh(question)
+    return snapshot
 
 
 def resolve_question(db: Session, question: Question, outcome: bool) -> Prediction:
