@@ -20,6 +20,12 @@ export default async function BriefPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/digest"
+            className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink"
+          >
+            Full digest
+          </Link>
           <CopyBriefButton brief={brief} />
           <a
             href={briefRssHref()}
