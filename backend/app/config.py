@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     # Mutating requests per client per minute; 0 disables limiting.
     rate_limit_per_minute: int = 240
+    # When true, operator mutations require an X-API-Key from /api/users.
+    require_api_key: bool = False
 
 
 @lru_cache
