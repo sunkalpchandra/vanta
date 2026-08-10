@@ -33,6 +33,13 @@
   snapshot names — anything added there needs a matching entry in
   `backend/scripts/export_snapshot.py`.
 
+- The feed's newest-forecast subquery must stay timestamp-first (id only
+  breaks ties): seeding writes the live forecast before its backfill, so
+  backfill rows have higher ids with older timestamps.
+- Counterfactual pipeline runs (sensitivity) must set
+  `QuestionContext.narratives = False` — never burn LLM calls on numbers-only
+  reruns.
+
 ## Verification loop
 
 ```
