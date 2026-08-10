@@ -25,6 +25,8 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - name: Bake API snapshot
+        env:
+          GIT_SHA: ${{ github.sha }}
         run: |
           pip install -r backend/requirements.txt
           python backend/scripts/export_snapshot.py --out frontend/public
