@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #08090d;
+  --color-surface: #0f131b;
+  --color-surface-2: #141a24;
+  --color-line: #1e2632;
+  --color-ink: #f5f7fa;
+  --color-ink-2: #9aa4b2;
+  --color-muted: #5c6675;
+  --color-accent: #3987e5;
+  --color-accent-2: #d95926;
+  --color-pos: #0ca30c;
+  --color-neg: #d03b3b;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.micro-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+}
+
+.card-hover {
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.card-hover:hover {
+  border-color: #2c3847;
+}
