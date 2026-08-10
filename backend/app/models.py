@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -40,6 +40,9 @@ class Question(Base):
 
 class Forecast(Base):
     __tablename__ = "forecasts"
+    # Every hot read path is "newest forecast for question X" / "newest before
+    # T for question X" — the composite index serves both without a scan.
+    __table_args__ = (Index("ix_forecasts_question_ts", "question_id", "timestamp"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), index=True)
