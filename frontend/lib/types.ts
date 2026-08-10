@@ -245,3 +245,16 @@ export type RealBacktestOut = {
   frozen?: boolean; // served from the committed artifact, not a live DB
   computed_at?: string;
 };
+
+export interface TraderRow {
+  user_id: number;
+  name: string;
+  equity: number;
+  lifetime_pnl: number;
+  n_trades: number;
+}
+
+export interface TraderBoard {
+  traders: TraderRow[];
+  note?: string;
+}

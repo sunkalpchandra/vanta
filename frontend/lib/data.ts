@@ -8,6 +8,7 @@
 import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
+  TraderBoard,
   RealBacktestOut,
   AgentCalibrationBin,
   AgentLeaderboardRow,
@@ -136,3 +137,7 @@ export async function getMarketsSample(): Promise<MarketsSample | null> {
     sampled: true,
   };
 }
+
+
+export const getTraderBoard = () =>
+  get<TraderBoard | null>("/api/markets/traders", "traders.json", null);
