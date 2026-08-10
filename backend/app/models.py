@@ -102,6 +102,18 @@ class AgentReport(Base):
     question: Mapped[Question] = relationship(back_populates="agent_reports")
 
 
+class QuestionNote(Base):
+    """Operator annotations on a question — context that isn't evidence
+    (resolution criteria clarifications, source caveats, follow-ups)."""
+
+    __tablename__ = "question_notes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class WatchlistItem(Base):
     """User-added discovery candidates, merged with the built-in watchlist."""
 
