@@ -71,11 +71,24 @@ def movers(
     return cards[:limit]
 
 
+SORT_KEYS = {
+    "edge": lambda q, f: abs(f.probability - q.market_probability),
+    "confidence": lambda q, f: f.confidence,
+    "volume": lambda q, f: q.market_volume_usd,
+}
+
+
 @router.get("", response_model=list[FeedCard])
-def intelligence_feed(limit: int = 20, db: Session = Depends(get_db)):
-    """Discovery cards ranked by |edge| — where vanta most disagrees with markets."""
+def intelligence_feed(
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("edge", pattern="^(edge|confidence|volume)$"),
+    db: Session = Depends(get_db),
+):
+    """Discovery cards for live questions. Default ranking: |edge| — where
+    vanta most disagrees with markets. Also sortable by confidence or volume."""
     pairs = latest_forecasts(db)
-    pairs.sort(key=lambda pair: abs(pair[1].probability - pair[0].market_probability), reverse=True)
+    key = SORT_KEYS[sort]
+    pairs.sort(key=lambda pair: key(pair[0], pair[1]), reverse=True)
     return [
         FeedCard(
             question_id=q.id,
