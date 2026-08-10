@@ -1,16 +1,10 @@
 import { FeedExplorer } from "@/components/FeedExplorer";
 import { MoversStrip } from "@/components/MoversStrip";
-import { getFeed, getHistory, getMovers } from "@/lib/data";
+import { getFeed, getMovers, getSparklines } from "@/lib/data";
 
 export default async function FeedPage() {
-  const [feed, movers] = await Promise.all([getFeed(), getMovers()]);
-  const histories = await Promise.all(
-    feed.map(async (card) => {
-      const history = await getHistory(String(card.question_id));
-      return [card.question_id, history.map((h) => h.probability)] as const;
-    }),
-  );
-  const sparklines = new Map(histories);
+  // One payload for all sparklines instead of one history call per card.
+  const [feed, movers, sparklines] = await Promise.all([getFeed(), getMovers(), getSparklines()]);
   return (
     <div>
       <div className="mb-8">
@@ -26,7 +20,7 @@ export default async function FeedPage() {
           and refresh — it seeds itself on first boot.
         </div>
       ) : (
-        <FeedExplorer cards={feed} sparklines={Object.fromEntries(sparklines)} />
+        <FeedExplorer cards={feed} sparklines={sparklines} />
       )}
     </div>
   );

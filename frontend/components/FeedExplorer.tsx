@@ -9,7 +9,7 @@ export function FeedExplorer({
   sparklines,
 }: {
   cards: FeedCard[];
-  sparklines?: Record<number, number[]>;
+  sparklines?: Record<string, number[]>;
 }) {
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
@@ -74,7 +74,7 @@ export function FeedExplorer({
               key={card.question_id}
               card={card}
               index={i}
-              sparkline={sparklines?.[card.question_id]}
+              sparkline={sparklines?.[String(card.question_id)]}
             />
           ))}
         </div>
