@@ -6,12 +6,22 @@ export const metadata: Metadata = {
   title: "vanta — forecasting intelligence",
   description:
     "Autonomous multi-agent intelligence engine for probabilistic forecasting. What the world believes will happen — and what will actually happen.",
+  metadataBase: new URL("https://sunkalpchandra.github.io"),
+  openGraph: {
+    title: "vanta — forecasting intelligence",
+    description:
+      "Seven agents deliberate on every question about the future. Market probability vs vanta's — with the full debate.",
+    url: "https://sunkalpchandra.github.io/vanta/",
+    siteName: "vanta",
+    type: "website",
+  },
 };
 
 const NAV = [
   { href: "/", label: "Feed" },
   { href: "/brief", label: "Morning Brief" },
   { href: "/leaderboard", label: "Accuracy" },
+  { href: "/archive", label: "Archive" },
   { href: "/methodology", label: "Methodology" },
   { href: "/ask", label: "Ask vanta" },
 ];
