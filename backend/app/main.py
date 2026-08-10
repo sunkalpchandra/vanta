@@ -43,4 +43,16 @@ app.include_router(discover.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "llm_narratives": llm_available()}
+    from sqlalchemy import text
+
+    try:
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
+        db_status = "ok"
+    except Exception:
+        db_status = "unreachable"
+    return {
+        "status": "ok" if db_status == "ok" else "degraded",
+        "db": db_status,
+        "llm_narratives": llm_available(),
+    }
