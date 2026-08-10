@@ -9,6 +9,7 @@ import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
   AgentLeaderboardRow,
+  BacktestOut,
   BriefItem,
   CalibrationBin,
   CategoryOut,
@@ -63,3 +64,4 @@ export const getPredictions = () =>
 export const getMovers = () => get<MoverCard[]>("/api/feed/movers", "movers.json", []);
 export const getAgentLeaderboard = () =>
   get<AgentLeaderboardRow[]>("/api/agents/leaderboard", "agents.json", []);
+export const getBacktest = () => get<BacktestOut | null>("/api/quant/backtest", "backtest.json", null);
