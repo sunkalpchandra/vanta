@@ -8,7 +8,32 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Planned
 
-- Live prediction-market and news ingest replacing the seeded corpus.
+- Live news ingest replacing the seeded evidence corpus.
+
+## [0.4.0] - 2026-08-10
+
+### Added
+
+- **Play-money prediction market** (play money · paper trading · real market
+  prices — never real money): registration mints a `vk_` key and a ⓥ10,000
+  virtual balance; buy/sell YES/NO shares in active real Polymarket/Kalshi
+  events at the current synced venue price; positions carry cost basis and
+  realized P&L; settlement pays ⓥ1/ⓥ0 per share at the venue outcome; a
+  trader leaderboard ranks lifetime P&L. See docs/TRADING.md.
+- **Market sync engine** (`scripts/sync_markets.py`): stateless
+  reconciliation of the corpus against current venue listings —
+  add / update prices / deactivate / settle — safe to re-run or interrupt.
+- **Scheduled demo refresh**: the Pages workflow now also runs on a 6-hour
+  cron, seeding a workspace bake DB and syncing current active markets into
+  it before the snapshot export, so the deployed static demo tracks real
+  events between pushes.
+- Trading data model: `positions` (unique per user/event/side) and the
+  append-only `trades` log; `market_events` gains `active` / `yes_price` /
+  `last_synced`. `scripts/migrate_v04.py` upgrades pre-v0.4 databases
+  idempotently.
+- Docs: docs/TRADING.md (market mechanics, money-math invariants, sync
+  semantics), play-money endpoint reference in docs/API.md, trading + sync
+  section in ARCHITECTURE.md.
 
 ## [0.3.0] - 2026-08-10
 

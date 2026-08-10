@@ -45,6 +45,35 @@
 - The brief cache key includes the category scope
   (`vanta:brief:{count}:{category|all}`); invalidation deletes by prefix.
 
+## Trading invariants (v0.4 play-money market)
+
+- **Play money, always**: ⓥ credits are virtual and non-redeemable. Every
+  trading surface (UI and docs) carries "play money · paper trading · real
+  market prices". Never add anything that moves, references, or implies real
+  money; no gambling aesthetics — it's a terminal, not a slot machine.
+- **Money math at the boundaries** (`app/trading.py`): validate `shares > 0`
+  and execution price strictly in (0, 1); round money to 2 decimals only at
+  the boundaries (trade cost, balance delta) and keep execution prices at 6
+  decimals so NO complements (`1 − yes_price`) don't drift — intermediate
+  math stays full-precision. Balances never go negative; sells are capped at
+  held shares; buys below the ⓥ0.01 minimum notional are rejected (their
+  cost would round to zero — free shares). Prices are deterministic code only
+  — the LLM layer never touches money, same rule as probabilities.
+- **Settle idempotence**: settlement pays each position exactly once —
+  `Position.settled` is the guard, same guarded-transition discipline as
+  `resolve_question`. Any settle path must be safe to re-run or crash
+  mid-way without double-paying.
+- **Sync statelessness**: `sync_markets.py` keeps no cursors or local state;
+  each run reconciles against the venue's *current* listings
+  (add / update / deactivate / settle) and must converge when re-run.
+  Deactivation removes markets from the tradable surface but never touches
+  open positions.
+- **Static markets sample lockstep**: the same rule as every snapshot surface
+  — any markets/portfolio data the static demo shows needs matching entries in
+  `backend/scripts/export_snapshot.py` and `frontend/lib/data.ts`, and the
+  Pages workflow's scheduled bake (seed → sync → export against the workspace
+  bake DB) assumes the exporter's existing-DB passthrough mode.
+
 ## Verification loop
 
 ```

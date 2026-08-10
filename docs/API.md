@@ -66,6 +66,31 @@ Mutations (`ask`, `refresh`, `resolve`, `evidence`, `market`, `notes` writes, di
 default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-limited
 (`RATE_LIMIT_PER_MINUTE`, default 240/client/min, 429 + Retry-After).
 
+## Play-money market (v0.4)
+
+**play money · paper trading · real market prices** — real Polymarket/Kalshi
+events at real synced venue prices, traded with virtual ⓥ credits. Never real
+money; see [docs/TRADING.md](TRADING.md).
+
+Unlike operator gating (opt-in), **trading always requires `X-API-Key`** —
+the key *is* the trading identity (`POST /api/users` returns it once;
+accounts open with ⓥ10,000).
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/markets` | Paginated real-venue markets. `?status=active\|settled`, `?category=`, `?q=` (text search), `?sort=volume\|close_time`, `?limit=&offset=`. Returns `{total, items, note}`. |
+| `GET /api/markets/{id}` | One event: question, venue, close time, current YES/NO price, `last_synced`. With a valid `X-API-Key` it also includes `my_positions`. |
+| `POST /api/markets/{id}/trade` | Execute at the current synced venue price. Body: `{side: yes\|no, action: buy\|sell, shares}`. `X-API-Key` required. Returns the trade, new balance, and updated position. |
+| `GET /api/markets/portfolio/me` | Balance, every position marked to the current price, realized/unrealized P&L totals, and equity. `X-API-Key` required. |
+| `GET /api/markets/traders` | Play-money leaderboard: traders ranked by lifetime P&L (equity − the ⓥ10,000 start); accounts that never traded are excluded. |
+
+Trade validation: `shares > 0` (`422` from the schema), execution price
+strictly in (0, 1), money rounded to 2 decimals at the boundaries, balance
+never negative, sells capped at held shares, buys below the ⓥ0.01 minimum
+notional rejected. Business-rule rejections (insufficient balance, inactive
+or already-resolved event, no synced price) return `409`; unknown market
+`404`; missing/invalid key `401`.
+
 ## Market
 
 | Endpoint | Description |
@@ -108,4 +133,6 @@ default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-li
 - `404` — unknown question id.
 - `409` — state conflicts: resolving twice, refreshing/adding evidence to a resolved question.
 - `422` — validation: malformed bodies, out-of-range `count`, unknown `category`.
-- No auth yet (see SECURITY.md); everything is workspace-local.
+- Auth is deliberately light (see SECURITY.md): `vk_` API keys identify traders
+  and optionally gate operator mutations — no sessions, roles, or OAuth. All
+  money is play money.

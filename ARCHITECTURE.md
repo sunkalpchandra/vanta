@@ -199,7 +199,10 @@ tests never depend on the network. `llm_available()` is reported by
 | `evidence` | Per-question signals: source, summary, sentiment, impact (0-1). Input to research/sentiment/skeptic. |
 | `agent_reports` | One structured row per agent per run: stance, probability, argument, details JSON. |
 | `predictions` | Resolved historical predictions (market vs vanta vs outcome) — feeds the leaderboard's accuracy and Brier scores. |
-| `users` | Exists in the schema; auth is not wired up yet. |
+| `users` | Identity: the `vk_` API-key credential (operator gating + trading identity) and the play-money ⓥ balance (default 10,000). |
+| `market_events` | The real-venue corpus (Polymarket/Kalshi), including the live-trading columns `active` / `yes_price` / `last_synced`. |
+| `positions` | One row per (user, event, side): shares, per-share cost basis, realized P&L, settled flag. |
+| `trades` | Append-only execution log; `cost` is the signed balance delta. |
 
 `agent_reports` exists so Debate Mode can render the full seven-agent argument
 — including each agent's structured `details` (analog lists, credible
@@ -271,6 +274,53 @@ an always-predict-the-base-rate benchmark. Results are idempotent per
 
 `scripts/promote_events.py` lifts top-volume ACTIVE Polymarket markets into
 `questions`, so the live feed carries real bets with real venue prices.
+
+## Play-money trading + market sync (v0.4)
+
+The market layer turns the `market_events` corpus into a paper-trading
+surface: **play money · paper trading · real market prices**. ⓥ credits are
+virtual and non-redeemable; the events and prices are real.
+
+**Identity.** Trading rides on the existing auth-lite users: `POST /api/users`
+mints the `vk_` key (returned once), and — unlike operator gating, which is
+opt-in — trading endpoints always resolve `X-API-Key → User`, because a trade
+must belong to an account. Accounts open at ⓥ10,000 (`User.balance`).
+
+**Trades.** `app/trading.py` is the engine; `routers/markets.py` the API. A
+trade executes at the event's current synced `yes_price` (NO prices at
+`1 − yes_price`, kept at 6 decimals). Validation is strict and server-side:
+shares > 0, price strictly in (0, 1), sells capped at held shares, balance
+never negative, buys below the ⓥ0.01 minimum notional rejected. Money rounds
+to 2 decimals at the boundaries (trade cost, balance delta);
+intermediate math keeps full precision. Each execution appends a `trades` row
+whose `cost` is the signed balance delta — the account is auditable by
+replaying its log — and upserts the unique (user, event, side) `positions`
+row: buys blend `avg_price`, sells realize P&L against it.
+
+**Settlement.** When a venue resolves an event, open positions settle at ⓥ1
+per winning share, ⓥ0 per losing share, crediting balances and booking
+`realized_pnl` (`trading.settle_event`). The `settled` flag makes settlement
+idempotent — settled positions are skipped, so the sync engine can call it on
+every pass and a re-run or crash mid-settle never double-pays. The trader
+leaderboard ranks lifetime P&L = equity (balance + open positions marked to
+current prices) − the ⓥ10,000 start; accounts that never traded are excluded.
+
+**Sync.** `scripts/sync_markets.py` reconciles the corpus against the venues'
+current listings, deliberately stateless — no cursors or checkpoint files;
+every run converges to venue truth, so crashes and re-runs are harmless. Four
+transitions: **add** (new active venue markets), **update** (`yes_price` +
+`last_synced` refresh), **deactivate** (closed/delisted markets leave the
+tradable surface; positions persist until settlement), **settle** (venue
+outcomes recorded, positions paid). Prices flow only through this
+deterministic path — the LLM layer never touches a number, and never touches
+money.
+
+**Deployment.** The Pages workflow re-bakes on a 6-hour cron: it seeds a
+workspace database, runs the sync into it (best-effort — venue hiccups fall
+back to the deterministic seed), and exports the snapshot from that DB, so
+the static demo tracks current real events between pushes. Existing databases
+predating v0.4 take the new columns via `scripts/migrate_v04.py`
+(`create_all` adds tables, never columns).
 
 ## Reasoning chat (v0.3)
 

@@ -61,6 +61,9 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 - **Operations** — alerts, digest, unified search, starred questions, operator notes, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
 - **Performance, measured** — constant-query hot paths, batched sparklines, gzip + caching; see [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 - **Real markets** — checkpointed ingest of 100k+ resolved Polymarket/Kalshi binary markets; active top-volume markets promoted into the live feed
+- **Play-money market** — trade real Polymarket/Kalshi events with virtual ⓥ credits at real synced venue prices: positions, cost basis, realized P&L, settlement at venue outcomes (**play money · paper trading · real market prices** — never real money); see [docs/TRADING.md](docs/TRADING.md)
+- **Live market sync** — a stateless sync engine keeps the tradable surface fresh (add / update prices / deactivate / settle), and the Pages demo re-bakes on a 6-hour cron so the deployed snapshot tracks current events
+- **Portfolio** — ⓥ balance, open positions marked to the current price, an append-only trade log, and a trader leaderboard by lifetime P&L
 - **Real backtest** — leakage-free scoring against pre-resolution venue prices with leave-one-out base rates and a no-skill benchmark; see [docs/BACKTEST.md](docs/BACKTEST.md)
 - **Reasoning chat** — `/chat` streams the live agent debate over SSE: per-agent stances and arguments as they compute, then the final scorecard
 - **Tested end to end** — 200+ backend tests (95% coverage), 32 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
@@ -95,7 +98,10 @@ GitHub Pages can't run the FastAPI backend, so the demo is a **baked snapshot**:
 `backend/scripts/export_snapshot.py` boots the seeded app and walks the read API into
 `frontend/public/data/*.json` + `frontend/public/cards/*.svg`, and the frontend builds with
 `NEXT_PUBLIC_STATIC_MODE=1` — same pages, same charts, data read from the snapshot instead of
-the network. `.github/workflows/pages.yml` re-bakes and redeploys on every push to `main`.
+the network. `.github/workflows/pages.yml` re-bakes and redeploys on every push to `main` **and
+on a 6-hour cron**: the scheduled bake seeds a workspace database, syncs current active markets
+into it (best-effort — a venue hiccup falls back to the deterministic seed), and exports from
+that, so the deployed demo carries fresh real events without a push.
 
 ```bash
 # reproduce the Pages build locally
@@ -141,6 +147,7 @@ All variables are optional. Backend settings live in `backend/.env`; frontend se
 | `GET /api/brief` | Morning brief (top mispricings) |
 | `GET /api/discover/candidates` · `POST /api/discover` | Autonomous research mode |
 | `GET /api/cards/{id}.svg` | Shareable prediction card |
+| `GET /api/markets` · `POST /api/markets/{id}/trade` | Play-money market over real synced events — [docs/TRADING.md](docs/TRADING.md) |
 
 Full reference: [docs/API.md](docs/API.md).
 
@@ -173,7 +180,8 @@ frontend/
 
 - Market data, evidence, and the resolved track record are a **seeded demo corpus** — deterministic and clearly labeled in-app. Production ingest (Polymarket/Kalshi APIs, news, filings) plugs in at `data.py`'s seams.
 - The synthetic demo corpus deliberately claims **no edge** (vanta's simulated estimates derive from the market signal, never the outcome). The only accuracy numbers that mean anything come from the real-market backtest over ingested Polymarket/Kalshi events.
-- Auth is deliberately light: opt-in API-key gating (`REQUIRE_API_KEY=1`) for operator mutations — sessions, roles, and OAuth are out of scope for the demo.
+- The prediction market is **paper trading only**: ⓥ credits are virtual, worthless, and non-redeemable. No deposits, no withdrawals, no fees, no payouts — the events and prices are real, the money never is. vanta is an educational forecasting terminal, not a gambling product.
+- Auth is deliberately light: `vk_` API keys are the trading identity and an opt-in gate (`REQUIRE_API_KEY=1`) for operator mutations — sessions, roles, and OAuth are out of scope for the demo.
 
 ## Roadmap
 
