@@ -181,16 +181,19 @@ def _backfill_market_history(db: Session, question: Question, days: int = 30) ->
 def _seed_resolved_predictions(db: Session) -> None:
     """Resolved track record derived from the reference corpus.
 
-    vanta's simulated estimates are drawn closer to the true outcome than the
-    market's — this models the intended edge and gives the leaderboard
-    realistic demo numbers. Clearly demo data, deterministic by seed.
+    vanta's simulated estimate derives from the MARKET signal (shrunk toward
+    the prior, plus independent noise) — never from the outcome. An earlier
+    version noised vanta around the known outcome, which rigged the synthetic
+    leaderboard to ~100% accuracy. The synthetic corpus exists to exercise
+    the surfaces and deliberately claims NO edge; the only real accuracy
+    numbers come from the market_events backtest.
     """
     rng = random.Random(1337)
     now = utcnow()
     for text, category, outcome in REFERENCE_EVENTS:
         target = 0.78 if outcome == 1 else 0.22
         market_p = clamp(target + rng.gauss(0, 0.22), 0.03, 0.97)
-        vanta_p = clamp(target + rng.gauss(0, 0.13), 0.03, 0.97)
+        vanta_p = clamp(0.85 * market_p + 0.15 * 0.5 + rng.gauss(0, 0.06), 0.03, 0.97)
         db.add(
             Prediction(
                 question_text=text,
