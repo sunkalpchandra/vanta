@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator
 
 
 def _to_utc_iso(value: datetime) -> str:
@@ -228,6 +228,15 @@ class DiscoveredQuestion(BaseModel):
 
 class NoteIn(BaseModel):
     body: str = Field(min_length=3, max_length=1000)
+
+    @field_validator("body")
+    @classmethod
+    def _strip_and_recheck(cls, v: str) -> str:
+        # min_length counts whitespace; validate the content, not the padding.
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("note body must contain at least 3 non-whitespace characters")
+        return v
 
 
 class NoteOut(BaseModel):

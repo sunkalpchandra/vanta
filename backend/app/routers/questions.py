@@ -307,7 +307,7 @@ def list_notes(question_id: int, db: Session = Depends(get_db)):
 )
 def add_note(question_id: int, body: NoteIn, db: Session = Depends(get_db)):
     _get_question_or_404(db, question_id)
-    note = QuestionNote(question_id=question_id, body=body.body.strip())
+    note = QuestionNote(question_id=question_id, body=body.body)
     db.add(note)
     db.commit()
     db.refresh(note)
