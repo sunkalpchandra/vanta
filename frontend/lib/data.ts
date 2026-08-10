@@ -21,7 +21,9 @@ import type {
   FeedCard,
   HistoryPoint,
   LeaderboardRow,
+  MarketItem,
   MarketPoint,
+  MarketsSample,
   MoverCard,
   PredictionOut,
   QuestionDetail,
@@ -98,3 +100,39 @@ export const getSensitivity = (id: string) =>
     `sensitivity/${id}.json`,
     { items: [] },
   );
+
+// Play-money markets surface. Static mode reads the baked markets-sample.json;
+// live mode has no dedicated sample endpoint, so it assembles the same shape
+// from two /api/markets fetches (server-side only, like everything here).
+type MarketsListBody = MarketItem[] | { items?: MarketItem[]; total?: number };
+
+async function fetchMarketsList(
+  query: string,
+): Promise<{ items: MarketItem[]; total: number } | null> {
+  try {
+    const res = await fetch(`${SSR_API_URL}/api/markets?${query}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const body = (await res.json()) as MarketsListBody;
+    const items = Array.isArray(body) ? body : (body.items ?? []);
+    const total = Array.isArray(body) ? body.length : (body.total ?? items.length);
+    return { items, total };
+  } catch {
+    return null; // backend offline — caller renders its empty state
+  }
+}
+
+export async function getMarketsSample(): Promise<MarketsSample | null> {
+  if (IS_STATIC) return readSnapshot<MarketsSample | null>("markets-sample.json", null);
+  const [active, settled] = await Promise.all([
+    fetchMarketsList("status=active&sort=volume&limit=100"),
+    fetchMarketsList("status=settled&limit=100"),
+  ]);
+  if (!active && !settled) return null;
+  return {
+    active: active?.items ?? [],
+    settled: settled?.items ?? [],
+    total_active: active?.total,
+    total_settled: settled?.total,
+    sampled: true,
+  };
+}

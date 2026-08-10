@@ -203,6 +203,28 @@ export interface PredictionOut {
   resolved_at: string;
 }
 
+// Play-money markets surface: real venue events (Polymarket/Kalshi) with real
+// synced prices — trading against them is paper trading in ⓥ credits only.
+export interface MarketItem {
+  id: number;
+  question: string;
+  category: string;
+  source: string; // polymarket | kalshi
+  yes_price: number | null;
+  volume_usd: number;
+  close_time: string | null;
+  outcome: number | null; // 1 YES, 0 NO, null unresolved
+}
+
+export interface MarketsSample {
+  active: MarketItem[];
+  settled: MarketItem[];
+  total_active?: number;
+  total_settled?: number;
+  sampled: boolean;
+  note?: string; // honest sentinel when the bake DB had no synced events
+}
+
 export type RealBacktestOut = {
   available?: boolean; // static snapshot sentinel
   horizon_days: number;
