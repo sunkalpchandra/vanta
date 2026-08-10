@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .llm import llm_available
-from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, stats
+from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, stats, users
 from .seed import seed_if_empty
 
 logger = logging.getLogger("vanta")
@@ -119,6 +119,7 @@ app.include_router(stats.router)
 app.include_router(discover.router)
 app.include_router(agents.router)
 app.include_router(alerts.router)
+app.include_router(users.router)
 
 
 @app.get("/api/meta")
