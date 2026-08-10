@@ -34,3 +34,8 @@ frontend/public/track-record.csv
 .idea/
 .vscode/
 backend/.hypothesis/
+
+# ingest checkpoints
+.ingest_polymarket_ckpt.json
+.ingest_kalshi_ckpt.json
+backend/.ingest_*_ckpt.json
