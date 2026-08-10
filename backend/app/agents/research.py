@@ -49,7 +49,10 @@ class ResearchAgent(Agent):
     def _template_argument(positive: list[dict], negative: list[dict], tilt: float) -> str:
         direction = "supports" if tilt > 0 else "cuts against" if tilt < 0 else "is balanced on"
         strongest = max(positive + negative, key=lambda e: e["impact"], default=None)
-        lead = f"The evidence base ({len(positive)} supporting, {len(negative)} opposing signals) {direction} the event."
+        lead = (
+            f"The evidence base ({len(positive)} supporting, {len(negative)} opposing signals) "
+            f"{direction} the event."
+        )
         if strongest:
             lead += f" The single strongest signal: {strongest['summary'].rstrip('.')}."
         return lead

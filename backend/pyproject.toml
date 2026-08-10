@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 110
+line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
@@ -7,6 +7,12 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 ignore = [
   "B008", # FastAPI Depends() in defaults is idiomatic
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Demo corpus: long literal evidence strings are data, not code.
+"app/data.py" = ["E501"]
+# Inline SVG template: markup lines don't wrap meaningfully.
+"app/routers/cards.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

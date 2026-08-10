@@ -83,7 +83,7 @@ def _seed_resolved_predictions(db: Session) -> None:
     """
     rng = random.Random(1337)
     now = utcnow()
-    for i, (text, category, outcome) in enumerate(REFERENCE_EVENTS):
+    for text, category, outcome in REFERENCE_EVENTS:
         target = 0.78 if outcome == 1 else 0.22
         market_p = clamp(target + rng.gauss(0, 0.22), 0.03, 0.97)
         vanta_p = clamp(target + rng.gauss(0, 0.13), 0.03, 0.97)

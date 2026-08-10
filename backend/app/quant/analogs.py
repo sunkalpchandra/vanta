@@ -37,10 +37,7 @@ class AnalogReport:
 
 def similarity(q_tokens: set[str], q_category: str, ref_text: str, ref_category: str) -> float:
     ref_tokens = tokenize(ref_text)
-    if not q_tokens or not ref_tokens:
-        overlap = 0.0
-    else:
-        overlap = len(q_tokens & ref_tokens) / len(q_tokens | ref_tokens)
+    overlap = 0.0 if not q_tokens or not ref_tokens else len(q_tokens & ref_tokens) / len(q_tokens | ref_tokens)
     # Category membership only *amplifies* topical overlap — on its own it must
     # not clear the min_similarity gate, or every same-category event becomes a
     # fake "analog" and the quant agent can never abstain.
