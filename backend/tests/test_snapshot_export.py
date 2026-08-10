@@ -79,3 +79,12 @@ def test_snapshot_feed_is_nonempty_and_consistent(snapshot_dir):
     question_ids = {q["id"] for q in json.loads((snapshot_dir / "data" / "questions.json").read_text())}
     assert feed
     assert all(card["question_id"] in question_ids for card in feed)
+
+
+def test_snapshot_meta_carries_commit_stamp(tmp_path, monkeypatch):
+    monkeypatch.setenv("GIT_SHA", "deadbee")
+    with TestClient(app) as client:
+        export_snapshot(client, tmp_path)
+    meta = json.loads((tmp_path / "data" / "meta.json").read_text())
+    assert meta["commit"] == "deadbee"
+    assert meta["mode"] == "static-demo"
