@@ -49,3 +49,9 @@ ingest-prices:
 
 promote:
 	cd backend && .venv/bin/python scripts/promote_events.py --count 25
+
+sync:
+	cd backend && .venv/bin/python scripts/sync_markets.py
+
+sync-loop:
+	cd backend && .venv/bin/python scripts/sync_markets.py --loop 30
