@@ -17,6 +17,7 @@ next-env.d.ts
 # Generated static-demo snapshot (baked by backend/scripts/export_snapshot.py)
 frontend/public/data/
 frontend/public/cards/
+frontend/public/brief.xml
 
 # Env & secrets
 .env
