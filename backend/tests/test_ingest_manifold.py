@@ -279,3 +279,19 @@ def test_corpus_upsert_is_idempotent(client):
     assert len(stored) == 1
     assert stored[0].outcome == 1
     assert stored[0].raw["slug"] == "will-i-vape-in-the-next-1-hour"
+
+
+def test_manifold_settlement_dispatch_does_not_raise():
+    """Regression: active.fetch_venue_row/resolution_of must handle the
+    'manifold' source — an unknown-source ValueError halted ALL settlement."""
+    from app.ingest import active
+
+    # resolution_of maps a resolved manifold row without raising.
+    assert active.resolution_of("manifold", {"isResolved": True, "resolution": "YES"}) == 1
+    assert active.resolution_of("manifold", {"isResolved": True, "resolution": "NO"}) == 0
+    assert active.resolution_of("manifold", {"isResolved": False, "resolution": None}) is None
+    # An unknown source still raises (the guard is intact).
+    import pytest
+
+    with pytest.raises(ValueError):
+        active.resolution_of("bogus", {})
