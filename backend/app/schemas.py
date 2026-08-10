@@ -138,6 +138,18 @@ class ResolveRequest(BaseModel):
     outcome: bool
 
 
+class EvidenceIn(BaseModel):
+    source: str = Field(min_length=2, max_length=100)
+    summary: str = Field(min_length=10, max_length=500)
+    sentiment: Literal["positive", "negative", "neutral"]
+    impact: float = Field(ge=0.0, le=1.0)
+
+
+class DiscoveredQuestion(BaseModel):
+    question: QuestionOut
+    rationale: str
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=10, max_length=500)
     category: Category = "technology"
