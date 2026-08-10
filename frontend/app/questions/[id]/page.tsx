@@ -1,15 +1,29 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AnalogsPanel } from "@/components/AnalogsPanel";
 import { CategoryBadge, EdgeBadge } from "@/components/Badges";
 import { ConfidenceMeter } from "@/components/ConfidenceMeter";
 import { DebatePanel } from "@/components/DebatePanel";
 import { EvidenceList } from "@/components/EvidenceList";
+import { LiveControls } from "@/components/LiveControls";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { StatTile } from "@/components/StatTile";
 import { shareCardHref } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
 import { getHistory, getQuestion, getQuestions } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const detail = await getQuestion(id);
+  if (!detail) return { title: "not found — vanta" };
+  return {
+    title: `${detail.question} — vanta`,
+    description: detail.latest_forecast
+      ? `vanta ${pct(detail.latest_forecast.probability)} vs market ${pct(detail.market_probability)}`
+      : detail.question,
+  };
+}
 
 export async function generateStaticParams() {
   // Static demo: prerender every snapshot question. Live mode: render on demand.
@@ -96,6 +110,9 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
             <div className="micro-label mb-2">Synthesis reasoning</div>
             <p className="text-sm leading-relaxed text-ink-2">{forecast.reasoning}</p>
           </div>
+
+          <AnalogsPanel reports={detail.agent_reports} />
+          <LiveControls questionId={detail.id} resolved={detail.resolved} />
         </>
       )}
 
