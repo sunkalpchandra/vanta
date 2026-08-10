@@ -14,6 +14,17 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- End-to-end tests: a Playwright suite over the built static export served
+  under the real `/vanta` base path, run in CI next to the export build.
+- Operator notes: per-question annotations (list open, writes gated) with a
+  live-mode panel on the question page.
+- Per-category morning brief (`?category=`) with scope-aware cache keys.
+- `/api/meta` reports the deployed commit; the Pages bake stamps `GIT_SHA`.
+- Keyboard paging (`[` / `]`) across questions; print stylesheets for the
+  brief and question pages.
+- `lib/chartData`: the chart's day-merge math extracted and unit-tested;
+  sparse series render dots so single-point lines stay visible.
+
 - Performance: constant-query feed/movers (was N+1), composite forecast index,
   batched `/api/feed/sparklines`, gzip, Cache-Control on tolerant reads,
   `X-Response-Time-Ms`, and a benchmark harness — measured in
