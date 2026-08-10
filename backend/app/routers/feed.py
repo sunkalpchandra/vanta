@@ -11,18 +11,30 @@ from ..schemas import FeedCard, MoverCard
 router = APIRouter(prefix="/api/feed", tags=["feed"])
 
 
-def latest_forecasts(db: Session) -> list[tuple[Question, Forecast]]:
-    """(question, latest forecast) pairs for live (unresolved) questions.
-
-    One query, not one per question: join each live question to its
-    max-timestamp forecast (max id breaks same-timestamp ties)."""
-    # Newest forecast id per question — ids are monotonic within a question's
-    # append-only history, so max(id) is the latest without a tie-break join.
-    newest = (
+def _newest_forecast_ids(db: Session, cutoff: datetime | None = None):
+    """Subquery: per question, the id of the max-timestamp forecast (id breaks
+    same-timestamp ties). Timestamp-first matters: seeding inserts the live
+    forecast BEFORE its backfilled history, so backfill rows have HIGHER ids
+    with OLDER timestamps — max(id) alone picks the wrong row."""
+    ts_scope = select(Forecast.question_id, func.max(Forecast.timestamp).label("ts"))
+    if cutoff is not None:
+        ts_scope = ts_scope.where(Forecast.timestamp <= cutoff)
+    newest_ts = ts_scope.group_by(Forecast.question_id).subquery()
+    return (
         select(Forecast.question_id, func.max(Forecast.id).label("forecast_id"))
+        .join(
+            newest_ts,
+            (Forecast.question_id == newest_ts.c.question_id) & (Forecast.timestamp == newest_ts.c.ts),
+        )
         .group_by(Forecast.question_id)
         .subquery()
     )
+
+
+def latest_forecasts(db: Session) -> list[tuple[Question, Forecast]]:
+    """(question, latest forecast) pairs for live (unresolved) questions.
+    Constant query count regardless of question count."""
+    newest = _newest_forecast_ids(db)
     rows = db.execute(
         select(Question, Forecast)
         .join(newest, newest.c.question_id == Question.id)
@@ -35,12 +47,7 @@ def latest_forecasts(db: Session) -> list[tuple[Question, Forecast]]:
 
 def previous_forecasts(db: Session, cutoff: datetime) -> dict[int, Forecast]:
     """Newest forecast at-or-before `cutoff`, per question — one query."""
-    prev = (
-        select(Forecast.question_id, func.max(Forecast.id).label("forecast_id"))
-        .where(Forecast.timestamp <= cutoff)
-        .group_by(Forecast.question_id)
-        .subquery()
-    )
+    prev = _newest_forecast_ids(db, cutoff=cutoff)
     rows = db.scalars(select(Forecast).join(prev, Forecast.id == prev.c.forecast_id)).all()
     return {forecast.question_id: forecast for forecast in rows}
 
