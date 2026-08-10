@@ -5,6 +5,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -50,9 +51,11 @@ function ChartTooltip({
 export function ProbabilityChart({
   history,
   marketHistory,
+  evidenceDates = [],
 }: {
   history: HistoryPoint[];
   marketHistory: MarketPoint[];
+  evidenceDates?: string[];
 }) {
   const byDay = new Map<string, { timestamp: string; vanta?: number; market?: number }>();
   const dayKey = (iso: string) => iso.slice(0, 10);
@@ -71,6 +74,16 @@ export function ProbabilityChart({
     });
   }
   const data = Array.from(byDay.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+  // Evidence arrivals mapped onto the chart's own day buckets (category axis:
+  // a ReferenceLine x must equal an existing data point's key).
+  const evidenceTicks = Array.from(
+    new Set(
+      evidenceDates
+        .map((iso) => byDay.get(dayKey(iso))?.timestamp)
+        .filter((t): t is string => Boolean(t)),
+    ),
+  );
 
   return (
     <div className="h-56 w-full">
@@ -94,6 +107,15 @@ export function ProbabilityChart({
             tickLine={false}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: INK_MUTED, strokeDasharray: "3 3" }} />
+          {evidenceTicks.map((tick) => (
+            <ReferenceLine
+              key={tick}
+              x={tick}
+              stroke={INK_MUTED}
+              strokeDasharray="2 4"
+              label={{ value: "e", position: "top", fill: INK_MUTED, fontSize: 9 }}
+            />
+          ))}
           <Legend
             formatter={(value: string) => <span style={{ color: "#9aa4b2", fontSize: 12 }}>{value}</span>}
             iconSize={10}
