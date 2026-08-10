@@ -61,13 +61,14 @@ def ingest_markets(db, client, args) -> None:
             values = normalize(market)
             if values is None:
                 continue
-            upsert_event(db, values)
+            _, created = upsert_event(db, values)
             kept += 1
-            upserted += 1
+            if created:  # re-upserts of existing rows must not eat the budget
+                upserted += 1
             if upserted % COMMIT_EVERY == 0:
                 db.commit()
-            if upserted >= args.limit_events:
-                break
+        # The limit is only checked at page boundaries: breaking mid-page
+        # would checkpoint the NEXT page's cursor and strand the remainder.
         db.commit()
         save_ckpt({"cursor": cursor, "scanned": scanned, "kept": kept})
         print(f"scanned={scanned} kept={kept} (+{upserted} this run) cursor={'yes' if cursor else 'exhausted'}")
@@ -80,7 +81,11 @@ def fill_prices(db, client, args) -> None:
     from app.ingest.kalshi import SOURCE, fetch_candles, price_at
     from app.models import MarketEvent
 
-    rows = (
+    # Permanent misses (no candles / market too short for a T-7d point) must
+    # not re-occupy the volume-ordered head of every run — remember them.
+    ckpt = load_ckpt()
+    missed_ids = set(ckpt.get("price_missed", []))
+    query = (
         db.query(MarketEvent)
         .filter(
             MarketEvent.source == SOURCE,
@@ -88,10 +93,10 @@ def fill_prices(db, client, args) -> None:
             MarketEvent.close_time.isnot(None),
             MarketEvent.price_7d.is_(None),
         )
-        .order_by(MarketEvent.volume_usd.desc())
-        .limit(args.price_budget)
-        .all()
     )
+    if missed_ids:
+        query = query.filter(MarketEvent.id.notin_(missed_ids))
+    rows = query.order_by(MarketEvent.volume_usd.desc()).limit(args.price_budget).all()
     print(f"price pass: {len(rows)} rows (budget {args.price_budget})")
     filled = misses = 0
     for i, row in enumerate(rows, 1):
@@ -104,14 +109,18 @@ def fill_prices(db, client, args) -> None:
         if closes:
             row.price_7d = price_at(closes, close, 7)
             row.price_30d = price_at(closes, close, 30)
+        if row.price_7d is not None:
             filled += 1
         else:
             misses += 1
+            missed_ids.add(row.id)
         if i % 50 == 0:
             db.commit()
             print(f"  priced {i}/{len(rows)} (filled={filled} misses={misses})")
         time.sleep(REQUEST_PAUSE_S)
     db.commit()
+    ckpt["price_missed"] = sorted(missed_ids)
+    save_ckpt(ckpt)
     print(f"price pass done: filled={filled} misses={misses}")
 
 
