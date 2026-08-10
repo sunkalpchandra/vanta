@@ -1,6 +1,6 @@
 # Data model
 
-Ten tables, all declared in `backend/app/models.py` against the single `DeclarativeBase` in
+Twelve tables, all declared in `backend/app/models.py` against the single `DeclarativeBase` in
 `backend/app/db.py`. The schema is created at startup (`Base.metadata.create_all` in the app
 lifespan) and seeded idempotently by `seed.py` — there are no migrations yet. Everything runs
 identically on SQLite (the default) and Postgres (compose).
@@ -43,6 +43,16 @@ indexed because the agent leaderboard aggregates by agent across all resolutions
 market and vanta probabilities at settlement, and the outcome. Powers the accuracy
 leaderboard. Rows with `question_id = NULL` are the seeded reference corpus; rows with a
 value came from a live question resolving.
+
+**market_events** — the real-market corpus: resolved (and some ambiguous) binary
+markets ingested from Polymarket and Kalshi, keyed unique on (source, source_id).
+`close_time` anchors to the venue's ACTUAL close, `price_7d`/`price_30d` are
+leakage-safe pre-close snapshots filled by a budgeted price pass. Deliberately
+separate from `questions` so a 100k-row corpus never touches product hot paths.
+
+**backtest_predictions** — one leakage-free pipeline run per (event, horizon),
+unique-indexed: the T-h market price the pipeline saw, vanta's probability, and
+the settled outcome. Feeds /api/backtest/real.
 
 **question_notes** — operator annotations that aren't evidence: resolution-criteria
 clarifications, source caveats, follow-ups. Body is validated non-whitespace (3–1000
