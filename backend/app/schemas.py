@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
@@ -10,8 +10,8 @@ def _to_utc_iso(value: datetime) -> str:
     parses them as local time and shifts every chart date by the viewer's UTC
     offset."""
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 UTCDateTime = Annotated[datetime, PlainSerializer(_to_utc_iso, return_type=str)]
