@@ -331,3 +331,19 @@ question creation honors operator gating. The stream owns its session — the
 request-scoped one closes before FastAPI consumes the generator. ChatConsole
 parses the stream with `lib/sse.ts` (chunk-boundary tested) and renders the
 debate progressively; static mode shows a clearly-labeled example transcript.
+
+## Agent-traders & market microstructure (v0.5)
+
+`app/agent_traders.py` runs the forecasting pipeline as three deterministic
+play-money bots that trade through the same `execute_trade` engine as humans —
+the forecasting edge tested in P&L. `app/pricehistory.py` records hourly-
+deduped price ticks per active market (the series behind `/markets/{id}`
+charts), seeded from real venue history by `scripts/backfill_ticks.py`.
+`app/routers/activity.py` exposes the public trade tape. Manifold Markets
+(`app/ingest/manifold.py`) joins Polymarket and Kalshi as a third venue, both
+for the resolved backtest corpus and the live trading surface.
+
+Everything new reuses the existing money engine and reconciliation model:
+bots hold `Position`/`Trade` rows, the sync engine records ticks each pass,
+and the static exporter bakes the tape plus per-market price series (lockstep-
+tested against `frontend/lib/data.ts`).
