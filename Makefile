@@ -40,3 +40,12 @@ docker:
 
 e2e: static
 	cd frontend && npx playwright test
+
+ingest:
+	cd backend && .venv/bin/python scripts/ingest_polymarket.py --limit-events 75000 --no-prices && .venv/bin/python scripts/ingest_kalshi.py --limit-events 25000 --no-prices
+
+ingest-prices:
+	cd backend && .venv/bin/python scripts/ingest_polymarket.py --limit-events 0 --prices --price-budget 20000 && .venv/bin/python scripts/ingest_kalshi.py --limit-events 0 --prices --price-budget 5000
+
+promote:
+	cd backend && .venv/bin/python scripts/promote_events.py --count 25
