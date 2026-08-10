@@ -91,6 +91,16 @@ def test_missing_question_404(client):
     assert client.get("/api/questions/99999").status_code == 404
 
 
+def test_evidence_carries_spread_timestamps(client):
+    """Seeded evidence arrival dates are spread over past weeks and serialized
+    as zone-qualified UTC."""
+    detail = client.get(f"/api/questions/{client.get('/api/questions').json()[-1]['id']}").json()
+    assert detail["evidence"], "seeded question must have evidence"
+    stamps = [e["created_at"] for e in detail["evidence"]]
+    assert all(s.endswith("Z") for s in stamps)
+    assert len(set(s[:10] for s in stamps)) >= 2  # not all the same day
+
+
 def test_timestamps_are_utc_qualified(client):
     """SQLite drops tzinfo; the API must still emit zone-qualified UTC so JS
     Date() doesn't parse timestamps as local time (regression test)."""
