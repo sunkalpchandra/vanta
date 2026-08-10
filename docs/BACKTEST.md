@@ -43,3 +43,12 @@ or disprove an edge on held-out data.
 - Markets that lived under a day have no T−7d price by definition.
 - The scorecard reports `coverage` (scored ÷ resolved corpus) and per-source
   counts — read them before quoting any number.
+- Kalshi's public settled-markets stream currently surfaces almost exclusively
+  high-frequency micro-markets (15-minute crypto strikes) with sub-7-day
+  lifetimes: its rows sit in the corpus but none are scoreable at T−7d, so the
+  published scorecard is effectively Polymarket-only (see `sources`). Reaching
+  Kalshi's older long-lived markets needs a per-series or authenticated walk —
+  an open TODO.
+- A committed frozen scorecard (`backend/app/frozen_backtest.json`, flagged
+  `frozen: true` with its computed date) is served on fresh databases so
+  deploys publish real numbers; re-run the pipeline to refresh or extend it.
