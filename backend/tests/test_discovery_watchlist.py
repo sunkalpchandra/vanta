@@ -38,6 +38,21 @@ def test_watchlist_list_and_delete(client):
     assert all(w["id"] != created["id"] for w in remaining)
 
 
+def test_watchlist_rejects_builtin_duplicate(client):
+    """Regression: adding the exact text of a built-in watchlist candidate
+    used to return 201 and mint duplicate questions via discovery."""
+    from app.discovery import WATCHLIST
+
+    body = {"question": WATCHLIST[0].question, "category": WATCHLIST[0].category}
+    assert client.post("/api/discover/watchlist", json=body).status_code == 409
+
+
+def test_watchlist_rejects_already_covered_question(client):
+    text = client.get("/api/questions").json()[-1]["question"]
+    resp = client.post("/api/discover/watchlist", json={"question": text, "category": "finance"})
+    assert resp.status_code == 409
+
+
 def test_calibration_category_filter(client):
     finance = client.get("/api/leaderboard/calibration?category=finance").json()
     everything = client.get("/api/leaderboard/calibration").json()
