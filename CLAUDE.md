@@ -53,16 +53,24 @@
   money; no gambling aesthetics — it's a terminal, not a slot machine.
 - **Money math at the boundaries** (`app/trading.py`): validate `shares > 0`
   and execution price strictly in (0, 1); round money to 2 decimals only at
-  the boundaries (trade cost, balance delta) and keep execution prices at 6
-  decimals so NO complements (`1 − yes_price`) don't drift — intermediate
-  math stays full-precision. Balances never go negative; sells are capped at
-  held shares; buys below the ⓥ0.01 minimum notional are rejected (their
-  cost would round to zero — free shares). Prices are deterministic code only
-  — the LLM layer never touches money, same rule as probabilities.
-- **Settle idempotence**: settlement pays each position exactly once —
-  `Position.settled` is the guard, same guarded-transition discipline as
-  `resolve_question`. Any settle path must be safe to re-run or crash
-  mid-way without double-paying.
+  the boundaries, and **house-favorable** — a buy's cost rounds up, a sell's
+  proceeds and every settlement payout round down (`_debit` / `_credit`), so
+  no run of dust trades can mint credits. Keep execution prices at 6 decimals
+  so NO complements (`1 − yes_price`) don't drift — intermediate math stays
+  full-precision. Balances never go negative; sells are capped at held shares;
+  both sides enforce the ⓥ0.01 minimum notional on true notional (shares ×
+  price), except a sell that fully closes a position (so a holder can always
+  exit a sub-cent lot). Trading halts once an event passes its `close_time`
+  (the synced price is stale) until the sync flips it inactive/resolved.
+  Prices are deterministic code only — the LLM layer never touches money,
+  same rule as probabilities.
+- **Settlement is position-driven + idempotent**: `settle_resolved` pays out
+  every resolved event that still has unsettled positions — driven by unpaid
+  positions, never a time window or a just-flipped-outcome signal — so no
+  payout is orphaned no matter which writer recorded the outcome.
+  `settle_event` pays each position exactly once (`Position.settled` is the
+  guard, same guarded-transition discipline as `resolve_question`); any settle
+  path must be safe to re-run or crash mid-way without double-paying.
 - **Sync statelessness**: `sync_markets.py` keeps no cursors or local state;
   each run reconciles against the venue's *current* listings
   (add / update / deactivate / settle) and must converge when re-run.

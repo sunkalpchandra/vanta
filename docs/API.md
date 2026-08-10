@@ -80,15 +80,18 @@ accounts open with ⓥ10,000).
 |---|---|
 | `GET /api/markets` | Paginated real-venue markets. `?status=active\|settled`, `?category=`, `?q=` (text search), `?sort=volume\|close_time`, `?limit=&offset=`. Returns `{total, items, note}`. |
 | `GET /api/markets/{id}` | One event: question, venue, close time, current YES/NO price, `last_synced`. With a valid `X-API-Key` it also includes `my_positions`. |
-| `POST /api/markets/{id}/trade` | Execute at the current synced venue price. Body: `{side: yes\|no, action: buy\|sell, shares}`. `X-API-Key` required. Returns the trade, new balance, and updated position. |
+| `POST /api/markets/{id}/trade` | Execute at the current synced venue price. Body: `{side: yes\|no, action: buy\|sell, shares, expected_price?}`. `expected_price` (optional) is the YES/NO price the ticket showed; if the live price has drifted more than 2 cents by execution time the fill is rejected with `409` (`detail: "price moved: ..."`). `X-API-Key` required. Returns the trade, new balance, and updated position. |
 | `GET /api/markets/portfolio/me` | Balance, every position marked to the current price, realized/unrealized P&L totals, and equity. `X-API-Key` required. |
 | `GET /api/markets/traders` | Play-money leaderboard: traders ranked by lifetime P&L (equity − the ⓥ10,000 start); accounts that never traded are excluded. |
 
-Trade validation: `shares > 0` (`422` from the schema), execution price
-strictly in (0, 1), money rounded to 2 decimals at the boundaries, balance
-never negative, sells capped at held shares, buys below the ⓥ0.01 minimum
-notional rejected. Business-rule rejections (insufficient balance, inactive
-or already-resolved event, no synced price) return `409`; unknown market
+Trade validation: `shares > 0` (and `expected_price`, when sent, in (0, 1)) —
+`422` from the schema; execution price strictly in (0, 1); money rounds
+house-favorable at 2 decimals (buys up, sells and payouts down, so dust trades
+can't mint credits); balance never negative; sells capped at held shares; both
+sides enforce the ⓥ0.01 minimum notional (a sell that fully closes a position
+is exempt). Business-rule rejections — insufficient balance; inactive,
+already-resolved, or past-`close_time` event; no synced price; `expected_price`
+drifted past the 2-cent slippage tolerance — return `409`; unknown market
 `404`; missing/invalid key `401`.
 
 ## Market
