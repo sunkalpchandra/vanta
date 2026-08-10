@@ -51,8 +51,23 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
   const forecast = detail.latest_forecast;
   const edge = forecast ? forecast.probability - detail.market_probability : 0;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Question",
+    name: detail.question,
+    dateCreated: detail.created_at,
+    about: detail.category,
+    ...(forecast && {
+      suggestedAnswer: {
+        "@type": "Answer",
+        text: `vanta estimates ${pct(forecast.probability)} probability (market: ${pct(detail.market_probability)}).`,
+      },
+    }),
+  };
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-2">
           <CategoryBadge category={detail.category} />
@@ -66,6 +81,14 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
             </span>
           )}
           <span className="micro-label">{detail.horizon_days}d horizon</span>
+          {detail.difficulty != null && (
+            <span
+              className="micro-label"
+              title="1 well-grounded … 5 speculative: horizon, evidence depth, market thinness, disagreement"
+            >
+              · difficulty {detail.difficulty}/5
+            </span>
+          )}
           <span className="micro-label">
             · ${Math.round(detail.market_volume_usd).toLocaleString("en-US")} market volume ·{" "}
             {detail.market_liquidity} liquidity
