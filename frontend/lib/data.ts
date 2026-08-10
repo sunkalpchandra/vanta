@@ -16,6 +16,7 @@ import type {
   FeedCard,
   HistoryPoint,
   LeaderboardRow,
+  MarketPoint,
   MoverCard,
   PredictionOut,
   QuestionDetail,
@@ -53,6 +54,8 @@ export const getQuestion = (id: string) =>
   get<QuestionDetail | null>(`/api/questions/${id}`, `questions/${id}.json`, null);
 export const getHistory = (id: string) =>
   get<HistoryPoint[]>(`/api/questions/${id}/history`, `history/${id}.json`, []);
+export const getMarketHistory = (id: string) =>
+  get<MarketPoint[]>(`/api/questions/${id}/market-history`, `market-history/${id}.json`, []);
 export const getLeaderboard = () => get<LeaderboardRow[]>("/api/leaderboard", "leaderboard.json", []);
 export const getBrief = () => get<BriefItem[]>("/api/brief", "brief.json", []);
 export const getStats = () => get<StatsOut | null>("/api/stats", "stats.json", null);
