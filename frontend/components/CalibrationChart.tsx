@@ -108,6 +108,9 @@ export function CalibrationChart({ bins }: { bins: CalibrationBin[] }) {
             name="market"
             stroke={MARKET}
             strokeWidth={2}
+            // Dashed (distinct from the perfect line's 4 4): the two series must
+            // stay distinguishable without color — the hues have ~equal luminance.
+            strokeDasharray="7 3"
             connectNulls
             dot={{ r: 3, fill: MARKET, strokeWidth: 0 }}
             activeDot={{ r: 5, fill: MARKET, stroke: "#0f131b", strokeWidth: 2 }}
