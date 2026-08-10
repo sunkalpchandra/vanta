@@ -233,6 +233,17 @@ class WatchlistIn(BaseModel):
     rationale: str = Field(default="", max_length=500)
 
 
+class UserCreate(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    api_key: str  # returned once, at creation
+    created_at: UTCDateTime
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=10, max_length=500)
     category: Category = "technology"
