@@ -2,6 +2,9 @@
 on the seeded synthetic track record. Everything here is deterministic quant
 code over ingested MarketEvents; the LLM is never involved."""
 
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -10,6 +13,24 @@ from ..db import get_db
 from ..deps import require_operator
 
 router = APIRouter(prefix="/api/backtest", tags=["backtest"])
+
+# A committed snapshot of a real backtest run (few KB). Served — clearly
+# flagged — when the live DB has no backtest rows, so fresh deploys and the
+# CI-baked demo still publish real numbers instead of a 404. Reproduce or
+# extend with make ingest / ingest-prices / POST /api/backtest/run.
+FROZEN_PATH = Path(__file__).resolve().parent.parent / "frozen_backtest.json"
+
+
+def load_frozen(horizon: int, category: str | None) -> dict | None:
+    """The frozen scorecard for a horizon — only for unfiltered queries (the
+    artifact stores no per-category slices)."""
+    if category is not None or not FROZEN_PATH.exists():
+        return None
+    payload = json.loads(FROZEN_PATH.read_text())
+    summary = payload.get("horizons", {}).get(str(horizon))
+    if not summary or not summary.get("n"):
+        return None
+    return {**summary, "frozen": True, "computed_at": payload.get("computed_at")}
 
 
 def _horizon(horizon: int = Query(7, description="7 or 30")) -> int:
@@ -30,6 +51,9 @@ def real_summary(
     leakage-free at T-horizon. 404 until the corpus has been backtested."""
     summary = summarize(db, horizon, category=category)
     if summary["n"] == 0:
+        frozen = load_frozen(horizon, category)
+        if frozen is not None:
+            return frozen
         raise HTTPException(
             status_code=404,
             detail=(
@@ -48,8 +72,13 @@ def real_calibration(
     db: Session = Depends(get_db),
 ):
     """Reliability-diagram bins for vanta vs the market over the real corpus.
-    Empty list until the corpus has been backtested."""
-    return summarize(db, horizon, category=category)["calibration"]
+    Falls back to the frozen artifact's bins on a fresh database."""
+    summary = summarize(db, horizon, category=category)
+    if summary["n"] == 0:
+        frozen = load_frozen(horizon, category)
+        if frozen is not None:
+            return frozen["calibration"]
+    return summary["calibration"]
 
 
 @router.post("/run", dependencies=[Depends(require_operator)])
