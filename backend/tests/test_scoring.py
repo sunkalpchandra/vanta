@@ -1,6 +1,14 @@
+import math
+
 import pytest
 
-from app.quant.scoring import brier_score, calibration_bins, directional_accuracy
+from app.quant.scoring import (
+    brier_score,
+    calibration_bins,
+    directional_accuracy,
+    log_score,
+    murphy_decomposition,
+)
 
 
 def test_brier_perfect_and_worst():
@@ -40,6 +48,29 @@ def test_calibration_empty_bins_are_none():
     bins = calibration_bins([(0.95, 1)], n_bins=10)
     assert bins[0].mean_predicted is None
     assert bins[-1].observed_rate == 1.0
+
+
+def test_log_score_punishes_confident_misses():
+    calibrated = log_score([(0.8, 1), (0.2, 0)])
+    overconfident_miss = log_score([(0.99, 0), (0.2, 0)])
+    assert overconfident_miss > calibrated
+    assert log_score([(0.5, 1), (0.5, 0)]) == pytest.approx(math.log(2))
+
+
+def test_log_score_finite_at_extremes():
+    assert math.isfinite(log_score([(1.0, 0), (0.0, 1)]))
+
+
+def test_murphy_identity_at_bin_centers():
+    """With forecasts exactly at bin centers, Brier = REL - RES + UNC holds
+    exactly (no within-bin variance term)."""
+    pairs = [(0.25, 1)] * 25 + [(0.25, 0)] * 75 + [(0.75, 1)] * 75 + [(0.75, 0)] * 25
+    d = murphy_decomposition(pairs, n_bins=4)
+    brier = brier_score(pairs)
+    assert d.reliability - d.resolution + d.uncertainty == pytest.approx(brier, abs=1e-9)
+    assert d.reliability == pytest.approx(0.0, abs=1e-9)  # perfectly calibrated
+    assert d.resolution > 0  # separates YES-ish from NO-ish cases
+    assert d.uncertainty == pytest.approx(0.25)  # base rate 0.5
 
 
 def test_calibration_round_quotes_land_in_their_nominal_bin():
