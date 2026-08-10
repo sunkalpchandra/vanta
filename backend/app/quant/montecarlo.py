@@ -30,6 +30,12 @@ def simulate(
 
     evidence_strength acts as a pseudo-sample size: more independent evidence
     means a tighter posterior. Deterministic for a fixed seed.
+
+    Skew caveat (found by property testing): at extreme probabilities with low
+    strength the posterior is so skewed that the MEAN can sit outside the
+    central [p5, p95] interval — rare large draws dominate it. Callers in this
+    codebase clamp probability to [0.05, 0.95] with strength >= 5, which keeps
+    the interval readable.
     """
     if not 0 < probability < 1:
         raise ValueError("probability must be strictly between 0 and 1")
