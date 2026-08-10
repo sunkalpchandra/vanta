@@ -55,3 +55,12 @@ sync:
 
 sync-loop:
 	cd backend && .venv/bin/python scripts/sync_markets.py --loop 30
+
+agents:
+	cd backend && .venv/bin/python scripts/run_agent_traders.py
+
+backfill-ticks:
+	cd backend && .venv/bin/python scripts/backfill_ticks.py
+
+migrate:
+	cd backend && .venv/bin/python scripts/migrate_v04.py && .venv/bin/python scripts/migrate_v05.py
