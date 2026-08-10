@@ -72,6 +72,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               model outputs with irreducible uncertainty.
             </p>
             <div className="flex items-center gap-4">
+              <Link href="/digest" className="text-xs text-muted transition-colors hover:text-ink-2">
+                Digest
+              </Link>
               <Link href="/methodology" className="text-xs text-muted transition-colors hover:text-ink-2">
                 Methodology
               </Link>
