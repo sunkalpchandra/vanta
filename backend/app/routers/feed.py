@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -135,3 +135,31 @@ def intelligence_feed(
         )
         for q, f in pairs[:limit]
     ]
+
+
+@router.get("/rss")
+def feed_rss(db: Session = Depends(get_db)):
+    """The intelligence feed as RSS — top edges, one item per live question."""
+    import html as html_mod
+
+    pairs = latest_forecasts(db)
+    pairs.sort(key=lambda pair: abs(pair[1].probability - pair[0].market_probability), reverse=True)
+    def entry(q, f):
+        title = html_mod.escape(f"{q.question} — market {q.market_probability:.0%}, vanta {f.probability:.0%}")
+        desc = html_mod.escape(f"Edge {f.probability - q.market_probability:+.0%}, conf {f.confidence}/10.")
+        guid = f"vanta-feed-{q.id}-{round(f.probability * 1000)}"
+        return (
+            f"\n  <item>\n    <title>{title}</title>\n    <description>{desc}</description>"
+            f'\n    <guid isPermaLink="false">{guid}</guid>\n  </item>'
+        )
+
+    entries = "".join(entry(q, f) for q, f in pairs[:15])
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>vanta Intelligence Feed</title>
+  <link>https://sunkalpchandra.github.io/vanta/</link>
+  <description>Where vanta's agent pipeline most disagrees with prediction markets.</description>{entries}
+</channel>
+</rss>"""
+    return Response(content=xml, media_type="application/rss+xml")
