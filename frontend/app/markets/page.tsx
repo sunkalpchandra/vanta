@@ -44,7 +44,6 @@ export default async function MarketsIndexPage() {
       <MarketStatsBar stats={stats} />
       <MarketsBrowser sample={sample} />
       <section className="mt-8">
-        <div className="micro-label mb-3">Biggest movers — 24h</div>
         <MarketMovers movers={movers} windowHours={24} />
       </section>
       <section className="mt-10">
