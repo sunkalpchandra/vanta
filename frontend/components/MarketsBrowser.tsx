@@ -14,6 +14,16 @@ type MarketSort = "volume" | "close_time";
 const PAGE_SIZE = 50;
 const CATEGORY_CHIPS = ["all", ...CATEGORIES, "other"] as const;
 
+/** Append a freshly fetched page onto the loaded rows, keyed by id.
+ * Offset paging over a live, re-sorted server table can re-hand rows we
+ * already hold; dropping those dupes keeps React keys unique and stops the
+ * same market appearing twice. */
+function mergeById(prev: MarketItem[], page: MarketItem[]): MarketItem[] {
+  const seen = new Set(prev.map((m) => m.id));
+  const fresh = page.filter((m) => !seen.has(m.id));
+  return fresh.length === page.length ? [...prev, ...page] : [...prev, ...fresh];
+}
+
 /** Browse the real-event corpus (Polymarket + Kalshi) and trade inline.
  * Live mode pages through GET /api/markets; the static demo filters the
  * baked sample entirely client-side. */
@@ -27,6 +37,8 @@ export function MarketsBrowser({ sample }: { sample: MarketsOut }) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(!IS_STATIC);
   const [error, setError] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [openId, setOpenId] = useState<number | null>(null);
 
   // Any filter change restarts pagination and collapses the open row.
@@ -36,10 +48,20 @@ export function MarketsBrowser({ sample }: { sample: MarketsOut }) {
     setOpenId(null);
   }
 
+  // Re-attempt the same offset after a failed load-more, leaving the rows
+  // already on screen untouched (bumping the nonce re-runs the fetch effect).
+  const retryLoadMore = () => setReloadNonce((n) => n + 1);
+
   useEffect(() => {
     if (IS_STATIC) return;
     let cancelled = false;
+    const isInitial = offset === 0;
     setLoading(true);
+    // A fresh (offset 0) fetch owns the full-width error; a later page owns
+    // only the inline load-more error, so its failure never blanks the rows
+    // already on screen. Clear both before every attempt.
+    if (isInitial) setError(false);
+    setLoadMoreError(false);
     const params = new URLSearchParams({
       status: tab,
       sort,
@@ -56,11 +78,18 @@ export function MarketsBrowser({ sample }: { sample: MarketsOut }) {
           .then((page: MarketsOut) => {
             if (cancelled) return;
             setTotal(page.total);
-            setItems((prev) => (offset === 0 ? page.items : [...prev, ...page.items]));
+            // Replace on a fresh page; otherwise append deduped by id — offset
+            // paging over a re-sorted table can re-hand rows we already hold.
+            setItems((prev) => (isInitial ? page.items : mergeById(prev, page.items)));
             setError(false);
+            setLoadMoreError(false);
           })
           .catch(() => {
-            if (!cancelled) setError(true);
+            if (cancelled) return;
+            // A later-page failure keeps the loaded rows and surfaces an inline
+            // retry; only a first page (nothing to preserve) blanks to error.
+            if (isInitial) setError(true);
+            else setLoadMoreError(true);
           })
           .finally(() => {
             if (!cancelled) setLoading(false);
@@ -72,7 +101,7 @@ export function MarketsBrowser({ sample }: { sample: MarketsOut }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tab, category, query, sort, offset]);
+  }, [tab, category, query, sort, offset, reloadNonce]);
 
   const staticVisible = useMemo(() => {
     if (!IS_STATIC) return [];
@@ -185,13 +214,29 @@ export function MarketsBrowser({ sample }: { sample: MarketsOut }) {
       )}
       {!IS_STATIC && !error && items.length < total && (
         <div className="mt-4 text-center">
-          <button
-            onClick={() => setOffset(items.length)}
-            disabled={loading}
-            className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-50"
-          >
-            {loading ? "Loading…" : `Load more (${items.length} of ${total})`}
-          </button>
+          {loadMoreError ? (
+            <div
+              role="alert"
+              className="inline-flex items-center gap-3 rounded-lg border border-line px-4 py-2 text-xs"
+            >
+              <span className="text-muted">Couldn&apos;t load more.</span>
+              <button
+                onClick={retryLoadMore}
+                disabled={loading}
+                className="font-semibold text-accent transition-colors hover:text-ink disabled:opacity-50"
+              >
+                {loading ? "Retrying…" : "Retry"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setOffset(items.length)}
+              disabled={loading}
+              className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-50"
+            >
+              {loading ? "Loading…" : `Load more (${items.length} of ${total})`}
+            </button>
+          )}
         </div>
       )}
       <p className="micro-label mt-6">play money · paper trading · real market prices</p>
