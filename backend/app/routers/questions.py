@@ -14,6 +14,7 @@ from ..schemas import (
     ResolveRequest,
 )
 from ..service import ResolutionError, create_question, resolve_question, run_and_store_forecast
+from .brief import invalidate_brief_cache
 
 router = APIRouter(prefix="/api/questions", tags=["questions"])
 
@@ -66,7 +67,10 @@ def refresh_forecast(question_id: int, db: Session = Depends(get_db)):
     question = _get_question_or_404(db, question_id)
     if question.resolved:
         raise HTTPException(status_code=409, detail="question is resolved; forecasts are frozen")
-    run_and_store_forecast(db, question)
+    try:
+        run_and_store_forecast(db, question)
+    except ResolutionError as exc:  # resolved while the pipeline ran
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
 
 
@@ -79,6 +83,7 @@ def resolve(question_id: int, body: ResolveRequest, db: Session = Depends(get_db
         resolve_question(db, question, body.outcome)
     except ResolutionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    invalidate_brief_cache()  # the brief must stop pitching a settled question
     return _detail(db, question)
 
 
@@ -100,7 +105,10 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     )
     db.commit()
     db.refresh(question)
-    run_and_store_forecast(db, question)
+    try:
+        run_and_store_forecast(db, question)
+    except ResolutionError as exc:  # resolved while the pipeline ran
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
 
 
