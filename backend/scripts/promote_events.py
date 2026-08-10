@@ -39,9 +39,12 @@ def promotable(market: dict) -> dict | None:
     mid-price strictly inside (0,1), and a real question text."""
     import json as _json
 
-    outcomes = market.get("outcomes")
-    if isinstance(outcomes, str):
-        outcomes = _json.loads(outcomes)
+    try:
+        outcomes = market.get("outcomes")
+        if isinstance(outcomes, str):
+            outcomes = _json.loads(outcomes)
+    except (ValueError, TypeError):
+        return None  # malformed row must not kill the whole promotion run
     if outcomes != ["Yes", "No"]:
         return None
     question = (market.get("question") or "").strip()
@@ -85,12 +88,16 @@ def main() -> int:
             if values["category"] == "other":
                 continue  # don't mislabel — the product's category set is closed
             category = values["category"]
+            volume = values["volume"]
+            liquidity = "high" if volume >= 1_000_000 else "medium" if volume >= 100_000 else "low"
             question = create_question(
                 db,
                 text=values["question"],
                 category=category,
                 horizon_days=90,
                 market_probability=values["market_probability"],
+                market_volume_usd=volume,
+                market_liquidity=liquidity,
             )
             run_and_store_forecast(db, question)
             existing.add(values["question"])
