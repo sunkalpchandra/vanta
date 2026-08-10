@@ -3,10 +3,16 @@
 vanta is a demo/research codebase, not a hardened production service. Treat it
 accordingly:
 
-- **No authentication.** A `users` table exists in the schema, but auth is not
-  wired up. Every API endpoint — including `POST /api/questions`, which runs
-  the full pipeline — is unauthenticated. Do not expose the backend to the
-  public internet as-is.
+- **Auth is opt-in, off by default.** Operator mutations (resolve, market,
+  evidence, refresh, discovery, watchlist writes) can be gated behind
+  `X-API-Key` by setting `REQUIRE_API_KEY=1` (register keys via
+  `POST /api/users`; keys are stored in plaintext — treat the DB as sensitive).
+  Reads and `POST /api/questions` stay open, and a sliding-window rate limit
+  (`RATE_LIMIT_PER_MINUTE`, per-process) guards all mutations. This is
+  demo-grade: do not expose the backend to the public internet as-is.
+- **Containers run unprivileged** (backend: dedicated user; frontend: `node`),
+  with OS security upgrades applied at build. Base-image CVEs that upstream
+  hasn't patched remain — rebuild images regularly.
 - **Reporting.** Report vulnerabilities by opening a GitHub issue on this
   repository. There is no bug bounty; a clear reproduction is the most useful
   thing you can provide.
