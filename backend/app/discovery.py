@@ -109,12 +109,26 @@ def pending_candidates(db: Session) -> list[Candidate]:
     return [c for c in all_candidates(db) if not _is_duplicate(c, existing)]
 
 
+def is_covered(db: Session, question_text: str, extra_texts: list[str] | None = None) -> bool:
+    """True when the text duplicates an existing question (or one of
+    extra_texts) by the discovery overlap threshold."""
+    existing = list(db.scalars(select(Question.question)).all()) + (extra_texts or [])
+    probe = Candidate(question_text, "", 0, "")
+    return _is_duplicate(probe, existing)
+
+
 def discover(db: Session, count: int) -> list[tuple[Question, Candidate]]:
     """Materialize up to `count` new questions from the watchlist and run the
     full agent pipeline on each. Idempotent: created questions are recognized
-    as duplicates on later calls."""
+    as duplicates on later calls, and duplicates *within* one call (e.g. the
+    same signal on both the built-in and user watchlists) collapse to one."""
     created: list[tuple[Question, Candidate]] = []
-    for candidate in pending_candidates(db)[:count]:
+    created_texts: list[str] = []
+    for candidate in pending_candidates(db):
+        if len(created) >= count:
+            break
+        if created_texts and _is_duplicate(candidate, created_texts):
+            continue  # duplicate of something minted earlier in this loop
         question = create_question(
             db,
             text=candidate.question,
@@ -123,4 +137,5 @@ def discover(db: Session, count: int) -> list[tuple[Question, Candidate]]:
         )
         run_and_store_forecast(db, question)
         created.append((question, candidate))
+        created_texts.append(candidate.question)
     return created
