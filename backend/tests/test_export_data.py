@@ -159,3 +159,38 @@ def test_positions_csv_headers_and_row(client):
     assert float(row[6]) == pytest.approx(0.0)  # unrealized at entry price
     assert float(row[7]) == pytest.approx(0.0)  # realized: nothing closed yet
     assert row[8] == "False"  # unsettled
+
+
+def test_csv_defuses_formula_injection(client):
+    """A market question that starts with =/+/-/@ (untrusted venue text) must
+    be neutralized so spreadsheets don't execute it as a formula."""
+    from app.db import SessionLocal
+    from app.models import MarketEvent
+
+    reg = client.post("/api/users", json={"email": "csv-injection@example.com"})
+    key = reg.json()["api_key"]
+    with SessionLocal() as db:
+        ev = MarketEvent(
+            source="test-w8-csv-inj",
+            source_id="inj-1",
+            question='=HYPERLINK("http://evil.example","x")',
+            category="other",
+            active=True,
+            yes_price=0.5,
+            outcome=None,
+        )
+        db.add(ev)
+        db.commit()
+        event_id = ev.id
+    client.post(
+        f"/api/markets/{event_id}/trade",
+        json={"side": "yes", "action": "buy", "shares": 10},
+        headers={"X-API-Key": key},
+    )
+    body = client.get("/api/export/trades.csv", headers={"X-API-Key": key}).text
+    # The dangerous field is present but prefixed with a quote so it's inert.
+    assert "'=HYPERLINK" in body
+    # And it never appears as a live formula (bare leading =).
+    for line in body.splitlines():
+        for cell in line.split(","):
+            assert not cell.lstrip('"').startswith("=")
