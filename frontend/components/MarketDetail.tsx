@@ -90,10 +90,11 @@ export function MarketDetail({ market, initialRows }: { market: MarketItem; init
   );
 
   useEffect(() => {
+    // SSR already resolved the series (static bake or live server fetch) —
+    // never re-fetch and risk clobbering a good chart with an error state.
+    if (initialRows && initialRows.length > 0) return;
     if (IS_STATIC) {
-      setHistory(
-        initialRows && initialRows.length > 0 ? { status: "ready", rows: initialRows } : { status: "static" },
-      );
+      setHistory({ status: "static" });
       return;
     }
     let cancelled = false;
