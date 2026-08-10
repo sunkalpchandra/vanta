@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { FeedCard } from "@/lib/types";
 import { pct } from "@/lib/format";
 import { CategoryBadge, EdgeBadge } from "./Badges";
@@ -17,9 +17,10 @@ export function FeedCardItem({
   sparkline?: number[];
 }) {
   const discovery = Math.abs(card.edge) >= 0.05;
+  const reduceMotion = useReducedMotion();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
     >
