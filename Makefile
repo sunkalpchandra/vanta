@@ -1,4 +1,8 @@
-.PHONY: dev-api dev-web test lint snapshot static demo docker
+.PHONY: dev-api dev-web test lint smoke snapshot static demo docker
+
+# Curl every endpoint against a running backend (make dev-api first)
+smoke:
+	bash backend/scripts/smoke.sh
 
 # Live backend on :8000 (seeds itself on first boot)
 dev-api:
