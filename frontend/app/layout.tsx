@@ -64,12 +64,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               vanta is a forecasting intelligence system, not investment advice. Probabilities are
               model outputs with irreducible uncertainty.
             </p>
-            <a
-              href="https://github.com/sunkalpchandra/vanta"
-              className="text-xs text-muted transition-colors hover:text-ink-2"
-            >
-              github.com/sunkalpchandra/vanta ↗
-            </a>
+            <div className="flex items-center gap-4">
+              <Link href="/methodology" className="text-xs text-muted transition-colors hover:text-ink-2">
+                Methodology
+              </Link>
+              <a
+                href="https://github.com/sunkalpchandra/vanta/blob/main/docs/API.md"
+                className="text-xs text-muted transition-colors hover:text-ink-2"
+              >
+                API docs ↗
+              </a>
+              <a
+                href="https://github.com/sunkalpchandra/vanta"
+                className="text-xs text-muted transition-colors hover:text-ink-2"
+              >
+                GitHub ↗
+              </a>
+            </div>
           </div>
         </footer>
       </body>
