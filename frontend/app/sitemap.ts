@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { CATEGORIES } from "@/lib/categories";
 import { BASE_PATH } from "@/lib/config";
 import { getQuestions } from "@/lib/data";
 
@@ -17,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/archive/` },
     { url: `${base}/methodology/` },
     { url: `${base}/ask/` },
+    ...CATEGORIES.map((slug) => ({ url: `${base}/category/${slug}/` })),
     ...questions.map((q) => ({ url: `${base}/questions/${q.id}/` })),
   ];
 }
