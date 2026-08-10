@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -28,6 +28,9 @@ class Question(Base):
     market_probability: Mapped[float] = mapped_column(Float)
     market_volume_usd: Mapped[float] = mapped_column(Float, default=0.0)
     market_liquidity: Mapped[str] = mapped_column(String(20), default="medium")
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    outcome: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 1 YES, 0 NO
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     forecasts: Mapped[list["Forecast"]] = relationship(back_populates="question", cascade="all, delete-orphan")
@@ -85,6 +88,8 @@ class Prediction(Base):
     __tablename__ = "predictions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Null for the seeded reference corpus; set when a live question resolves.
+    question_id: Mapped[int | None] = mapped_column(ForeignKey("questions.id"), nullable=True)
     question_text: Mapped[str] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(50), index=True)
     market_probability: Mapped[float] = mapped_column(Float)
