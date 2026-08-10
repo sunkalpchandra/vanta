@@ -9,6 +9,8 @@ import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
   AgentLeaderboardRow,
+  AgentRecord,
+  AlertItem,
   BacktestOut,
   BriefItem,
   CalibrationBin,
@@ -21,6 +23,7 @@ import type {
   PredictionOut,
   QuestionDetail,
   QuestionOut,
+  RelatedQuestion,
   SensitivityItem,
   StatsOut,
 } from "./types";
@@ -71,6 +74,11 @@ export const getAgentLeaderboard = () =>
 export const getBacktest = () => get<BacktestOut | null>("/api/quant/backtest", "backtest.json", null);
 export const getSparklines = () =>
   get<Record<string, number[]>>("/api/feed/sparklines", "sparklines.json", {});
+export const getRelated = (id: string) =>
+  get<RelatedQuestion[]>(`/api/questions/${id}/related`, `related/${id}.json`, []);
+export const getAlerts = () => get<AlertItem[]>("/api/alerts", "alerts.json", []);
+export const getAgentRecords = (name: string) =>
+  get<AgentRecord[]>(`/api/agents/${name}/records`, `agent-records/${name}.json`, []);
 export const getSensitivity = (id: string) =>
   get<{ items: SensitivityItem[] }>(
     `/api/questions/${id}/sensitivity`,
