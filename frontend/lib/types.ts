@@ -11,6 +11,7 @@ export interface EvidenceOut {
   summary: string;
   sentiment: "positive" | "negative" | "neutral";
   impact: number;
+  created_at: string;
 }
 
 export interface AgentReportOut {
@@ -95,6 +96,14 @@ export interface MoverCard {
   previous: number;
   delta: number;
   window_days: number;
+}
+
+export interface SensitivityItem {
+  source: string;
+  summary: string;
+  sentiment: string;
+  impact: number;
+  delta: number;
 }
 
 export interface BacktestOut {
