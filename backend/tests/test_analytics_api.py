@@ -26,6 +26,35 @@ def test_movers_window_validation(client):
     assert client.get("/api/feed/movers?days=0").status_code == 422
 
 
+def test_movers_exclude_stale_questions(client):
+    """Regression: a question whose forecasts all predate the window used to
+    appear as a zero-delta 'mover' (previous row == latest row)."""
+    from datetime import timedelta
+
+    from app.db import SessionLocal
+    from app.models import Forecast
+
+    created = client.post(
+        "/api/questions",
+        json={"question": "Will this stale movers regression probe resolve YES?", "category": "finance"},
+    ).json()
+    qid = created["id"]
+    with SessionLocal() as db:
+        for forecast in db.query(Forecast).filter(Forecast.question_id == qid).all():
+            forecast.timestamp = forecast.timestamp - timedelta(days=20)
+        db.commit()
+    movers = client.get("/api/feed/movers?days=3&limit=20").json()
+    assert qid not in [m["question_id"] for m in movers]
+
+
+def test_brief_ranks_monotonic_in_edge(client):
+    """Regression: the diversity backfill used to append a skipped high-edge
+    pair after lower-edge picks without re-sorting."""
+    brief = client.get("/api/brief?count=7").json()
+    edges = [abs(b["edge"]) for b in brief]
+    assert edges == sorted(edges, reverse=True)
+
+
 def test_stats_include_log_scores_and_murphy(client):
     s = client.get("/api/stats").json()
     assert s["vanta_log_score"] > 0
