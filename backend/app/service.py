@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from .agents.base import QuestionContext
 from .agents.historian import base_rate_for
 from .agents.orchestrator import PipelineResult, run_pipeline
-from .models import AgentReport, Evidence, Forecast, Prediction, Question, utcnow
+from .models import AgentReport, AgentTrackRecord, Evidence, Forecast, Prediction, Question, utcnow
 
 
 def build_context(question: Question, evidence: list[Evidence]) -> QuestionContext:
@@ -138,6 +138,20 @@ def resolve_question(db: Session, question: Question, outcome: bool) -> Predicti
         resolved_at=resolved_at,
     )
     db.add(prediction)
+    # Freeze each agent's final call — the internal forecaster competition.
+    reports = db.scalars(select(AgentReport).where(AgentReport.question_id == question.id)).all()
+    for report in reports:
+        if report.probability is None:
+            continue  # skeptic (and abstaining agents) never estimate
+        db.add(
+            AgentTrackRecord(
+                question_id=question.id,
+                agent=report.agent,
+                probability=report.probability,
+                outcome=int(outcome),
+                resolved_at=resolved_at,
+            )
+        )
     try:
         db.commit()
     except IntegrityError as exc:  # unique(question_id) — a concurrent resolve won
