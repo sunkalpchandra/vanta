@@ -33,6 +33,7 @@ DATA_TS_SNAPSHOT_NAMES = [
     "movers",
     "agents",
     "backtest",
+    "sparklines",
     "meta",
 ]
 

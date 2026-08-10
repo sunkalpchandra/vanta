@@ -39,6 +39,7 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         "agents.json": "/api/agents/leaderboard",
         "movers.json": "/api/feed/movers",
         "backtest.json": "/api/quant/backtest",
+        "sparklines.json": "/api/feed/sparklines",
         "stats.json": "/api/stats",
         "categories.json": "/api/categories",
     }
