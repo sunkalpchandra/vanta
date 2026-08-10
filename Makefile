@@ -9,6 +9,10 @@ verify: lint test
 smoke:
 	bash backend/scripts/smoke.sh
 
+# Endpoint latency benchmark (fresh seeded DB, in-process)
+bench:
+	cd backend && .venv/bin/python scripts/bench.py --n 30
+
 # Live backend on :8000 (seeds itself on first boot)
 dev-api:
 	cd backend && .venv/bin/uvicorn app.main:app --reload
