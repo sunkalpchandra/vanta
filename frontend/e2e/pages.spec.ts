@@ -57,3 +57,16 @@ test("leaderboard leads with the real-backtest section", async ({ page }) => {
   await expect(page.getByText(/real-market backtest/i).first()).toBeVisible();
   await expect(page.getByText(/synthetic demo corpus below/i)).toBeVisible();
 });
+
+test("markets page lists real events with prices and the play-money label", async ({ page }) => {
+  await page.goto("markets/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/markets/i);
+  await expect(page.getByText(/play money/i).first()).toBeVisible();
+  await expect(page.getByText(/%/).first()).toBeVisible();
+});
+
+test("portfolio shows the static-mode honest state", async ({ page }) => {
+  await page.goto("portfolio/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/portfolio/i);
+  await expect(page.getByText(/static demo|start trading/i).first()).toBeVisible();
+});
