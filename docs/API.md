@@ -14,6 +14,9 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 | `POST /api/questions/{id}/refresh` | Re-run the pipeline. `409` once resolved. |
 | `POST /api/questions/{id}/evidence` | Ingest a signal (`{source, summary, sentiment, impact}`) and immediately re-forecast. `409` once resolved. |
 | `POST /api/questions/{id}/resolve` | Settle against reality: `{outcome: bool}`. Freezes the question, writes the leaderboard prediction. `409` on double-resolve. |
+| `GET /api/questions/{id}/notes` | Operator annotations, newest first. |
+| `POST /api/questions/{id}/notes` | Add a note (`{body}`, 3–1000 chars) — resolution caveats, source warnings, follow-ups. |
+| `DELETE /api/questions/{id}/notes/{note_id}` | Remove a note. `404` if it isn't on that question. |
 
 ## Intelligence surfaces
 
@@ -21,7 +24,7 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 |---|---|
 | `GET /api/feed` | Discovery cards for live questions, ranked by absolute edge. `?limit=` caps. |
 | `GET /api/feed/movers?days=3&limit=6` | Questions whose vanta probability moved most over the window. |
-| `GET /api/brief?count=5` | Morning brief — top mispricings, max 2 per category (`count` 1–20). Cached 10 minutes; invalidated on resolution. |
+| `GET /api/brief?count=5` | Morning brief — top mispricings, max 2 per category (`count` 1–20). `?category=` scopes it to one sector (cache keys are scoped too). Cached 10 minutes; invalidated on resolution. |
 | `GET /api/cards/{id}.svg` | Self-contained shareable prediction card (SVG). RESOLVED stamp once settled. |
 
 ## Track record
@@ -58,7 +61,7 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 | `POST /api/users` | Register an operator; the `vk_...` key is returned once. 409 on duplicate email. |
 | `GET /api/users/me` | Identity for a presented `X-API-Key`. |
 
-Mutations (`refresh`, `resolve`, `evidence`, `market`, discovery, watchlist writes) are open by
+Mutations (`ask`, `refresh`, `resolve`, `evidence`, `market`, `notes` writes, discovery, watchlist writes) are open by
 default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-limited
 (`RATE_LIMIT_PER_MINUTE`, default 240/client/min, 429 + Retry-After).
 
@@ -88,7 +91,7 @@ default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-li
 | Endpoint | Description |
 |---|---|
 | `GET /api/health` | `{status, db, llm_narratives}` — includes a live DB probe. |
-| `GET /api/meta` | Build identity: name, version, docs path, source repo. |
+| `GET /api/meta` | Build identity: name, version, deployed `commit` (`GIT_SHA` env, null locally), docs path, source repo. |
 
 ## Error semantics
 
