@@ -51,6 +51,7 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 |---|---|
 | `GET /api/quant/backtest` | Leave-one-out backtest of the analog engine over the reference corpus, with the base-rate benchmark. |
 | `GET /api/brief/rss` | The morning brief as RSS. |
+| `GET /api/alerts/rss` | The alert stream (moves + edges) as RSS. |
 | `GET /api/feed?sort=edge\|confidence\|volume` | Feed re-ranking. |
 | `GET /api/leaderboard/calibration?category=` | Reliability bins scoped to one category. |
 
@@ -82,7 +83,7 @@ default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-li
 | `GET /api/alerts` | Derived attention state: biggest moves and edges, one per question. |
 | `GET /api/feed/sparklines` | Every live probability series in one payload. |
 | `GET /api/feed/rss` | The feed as RSS. |
-| `GET /api/search?q=` | Unified search across live questions and the archive corpus. |
+| `GET /api/search?q=` | Unified search across live questions and the archive corpus (`?category=` scopes both result sets). |
 | `GET /api/agents/{name}/records` · `/calibration` | One agent's frozen calls and its reliability bins. |
 | `GET /metrics` | Per-route request counters (Prometheus text). |
 
