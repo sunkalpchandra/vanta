@@ -14,6 +14,7 @@ from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .llm import llm_available
 from .routers import (
+    activity,
     agents,
     alerts,
     backtest,
@@ -23,6 +24,7 @@ from .routers import (
     discover,
     feed,
     leaderboard,
+    market_history,
     markets,
     questions,
     search,
@@ -79,6 +81,7 @@ app = FastAPI(
         {"name": "backtest", "description": "Leakage-free backtest of the pipeline over real ingested markets."},
         {"name": "chat", "description": "Real-time reasoning chat — SSE stream of the agent debate."},
         {"name": "markets", "description": "Play-money prediction market over real synced events."},
+        {"name": "activity", "description": "Public trade tape across all traders."},
     ],
 )
 
@@ -180,6 +183,8 @@ app.include_router(search.router)
 app.include_router(backtest.router)
 app.include_router(chat.router)
 app.include_router(markets.router)
+app.include_router(market_history.router)
+app.include_router(activity.router)
 
 
 @app.get("/metrics")
