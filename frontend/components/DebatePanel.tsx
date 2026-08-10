@@ -44,9 +44,42 @@ export function DebatePanel({ reports }: { reports: AgentReportOut[] }) {
               </div>
             </div>
             <p className="mt-2 text-sm leading-relaxed text-ink-2">{report.argument}</p>
+            <DetailChips details={report.details} />
           </motion.div>
         );
       })}
+    </div>
+  );
+}
+
+/** Structured highlights from each agent's report details. */
+function DetailChips({ details }: { details: Record<string, unknown> }) {
+  const chips: string[] = [];
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
+  const ciLow = num(details.ci_low);
+  const ciHigh = num(details.ci_high);
+  if (ciLow != null && ciHigh != null) {
+    chips.push(`90% CI ${Math.round(ciLow * 100)}–${Math.round(ciHigh * 100)}%`);
+  }
+  const n = num(details.n_analogs);
+  if (n) chips.push(`${n} analogs`);
+  const share = num(details.positive_share);
+  if (share != null) chips.push(`${Math.round(share * 100)}% positive`);
+  if (typeof details.momentum === "string" && details.momentum !== "flat") {
+    chips.push(`momentum ${details.momentum}`);
+  }
+  const base = num(details.base_rate);
+  if (base != null) chips.push(`base rate ${Math.round(base * 100)}%`);
+  const haircut = num(details.confidence_haircut);
+  if (haircut) chips.push(`confidence −${haircut.toFixed(1)}`);
+  if (!chips.length) return null;
+  return (
+    <div className="mt-2.5 flex flex-wrap gap-1.5">
+      {chips.map((chip) => (
+        <span key={chip} className="num rounded border border-line px-1.5 py-0.5 text-[11px] text-muted">
+          {chip}
+        </span>
+      ))}
     </div>
   );
 }
