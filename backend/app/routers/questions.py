@@ -220,10 +220,24 @@ def forecast_history(question_id: int, db: Session = Depends(get_db)):
     return [HistoryPoint(timestamp=f.timestamp, probability=f.probability) for f in rows]
 
 
+def _difficulty(question: Question, latest: Forecast | None) -> int:
+    """1 (well-grounded) .. 5 (speculative)."""
+    score = 1.0
+    score += min(1.5, question.horizon_days / 365)  # long horizons are harder
+    evidence_depth = sum(e.impact for e in question.evidence)
+    score += max(0.0, 1.0 - evidence_depth * 0.35)  # thin evidence is harder
+    if question.market_liquidity == "low":
+        score += 0.5  # a thin market is a weak anchor
+    if latest is not None:
+        score += min(1.0, abs(latest.probability - question.market_probability) * 3)
+    return max(1, min(5, round(score)))
+
+
 def _detail(db: Session, question: Question) -> QuestionDetail:
     detail = QuestionDetail.model_validate(question)
     latest = _latest_forecast(db, question.id)
     detail.latest_forecast = ForecastOut.model_validate(latest) if latest else None
     detail.evidence = [e for e in question.evidence]
     detail.agent_reports = [r for r in question.agent_reports]
+    detail.difficulty = _difficulty(question, latest)
     return detail
