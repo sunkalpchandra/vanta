@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: ruff check app tests scripts
-      - run: python -m pytest tests/ -q
+      - run: python -m pytest tests/ -q --cov=app --cov-fail-under=85 --cov-report=term-missing:skip-covered
       - name: Smoke test against a live server
         run: |
           uvicorn app.main:app --port 8000 &
