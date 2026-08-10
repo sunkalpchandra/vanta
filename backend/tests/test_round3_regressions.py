@@ -106,3 +106,24 @@ def test_brief_category_filter(client):
     full = client.get("/api/brief?count=5").json()
     assert len({i["category"] for i in full}) >= 2
     _local_cache.clear()
+
+
+def test_alerts_rss_is_wellformed(client):
+    import xml.etree.ElementTree as ET
+
+    resp = client.get("/api/alerts/rss?min_edge=0.01&min_move=0.01")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/rss+xml")
+    root = ET.fromstring(resp.text)
+    assert root.tag == "rss"
+    assert root.find("channel/title").text == "vanta Alerts"
+
+
+def test_search_category_scopes_both_result_sets(client):
+    body = client.get("/api/search?q=will&category=technology").json()
+    assert all(row["category"] == "technology" for row in body["questions"])
+    assert all(row["category"] == "technology" for row in body["archive"])
+    unscoped = client.get("/api/search?q=will").json()
+    total = len(unscoped["questions"]) + len(unscoped["archive"])
+    scoped = len(body["questions"]) + len(body["archive"])
+    assert scoped <= total
