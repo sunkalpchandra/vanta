@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
+import { BASE_PATH, IS_STATIC } from "@/lib/config";
 import { getPredictions } from "@/lib/data";
 import { pct, shortDate } from "@/lib/format";
+
+const csvHref = IS_STATIC
+  ? `${BASE_PATH}/track-record.csv`
+  : `${API_URL}/api/leaderboard/predictions.csv`;
 
 export const metadata = { title: "archive — vanta" };
 
@@ -8,12 +14,20 @@ export default async function ArchivePage() {
   const predictions = await getPredictions();
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          Every settled call — vanta&apos;s frozen forecast vs the market&apos;s, against what
-          actually happened. Closer call is marked.
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
+          <p className="mt-1 text-sm text-ink-2">
+            Every settled call — vanta&apos;s frozen forecast vs the market&apos;s, against what
+            actually happened. Closer call is marked.
+          </p>
+        </div>
+        <a
+          href={csvHref}
+          className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink"
+        >
+          Download CSV
+        </a>
       </div>
       {predictions.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">Nothing has resolved yet.</div>
