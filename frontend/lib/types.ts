@@ -92,6 +92,16 @@ export interface MoverCard {
   window_days: number;
 }
 
+export interface BacktestOut {
+  n_events: number;
+  n_covered: number;
+  coverage: number;
+  accuracy: number | null;
+  brier: number | null;
+  log_score: number | null;
+  baseline_brier: number;
+}
+
 export interface AgentLeaderboardRow {
   agent: string;
   n_resolved: number;
