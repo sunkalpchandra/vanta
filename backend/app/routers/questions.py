@@ -3,17 +3,25 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Evidence, Forecast, Question
+from ..models import Evidence, Forecast, MarketSnapshot, Question
 from ..schemas import (
     AskRequest,
     EvidenceIn,
     ForecastOut,
     HistoryPoint,
+    MarketPoint,
+    MarketUpdateRequest,
     QuestionDetail,
     QuestionOut,
     ResolveRequest,
 )
-from ..service import ResolutionError, create_question, resolve_question, run_and_store_forecast
+from ..service import (
+    ResolutionError,
+    create_question,
+    record_market_price,
+    resolve_question,
+    run_and_store_forecast,
+)
 from .brief import invalidate_brief_cache
 
 router = APIRouter(prefix="/api/questions", tags=["questions"])
@@ -125,6 +133,29 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     except ResolutionError as exc:  # resolved while the pipeline ran
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
+
+
+@router.post("/{question_id}/market", response_model=QuestionDetail)
+def update_market_price(question_id: int, body: MarketUpdateRequest, db: Session = Depends(get_db)):
+    """Ingest a new market price. Doesn't re-run the pipeline by itself —
+    call /refresh afterwards if the move warrants a re-forecast."""
+    question = _get_question_or_404(db, question_id)
+    try:
+        record_market_price(db, question, body.probability)
+    except ResolutionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _detail(db, question)
+
+
+@router.get("/{question_id}/market-history", response_model=list[MarketPoint])
+def market_history(question_id: int, db: Session = Depends(get_db)):
+    _get_question_or_404(db, question_id)
+    rows = db.scalars(
+        select(MarketSnapshot)
+        .where(MarketSnapshot.question_id == question_id)
+        .order_by(MarketSnapshot.timestamp.asc(), MarketSnapshot.id.asc())
+    ).all()
+    return [MarketPoint(timestamp=s.timestamp, probability=s.probability) for s in rows]
 
 
 @router.get("/{question_id}/analogs")
