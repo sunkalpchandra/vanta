@@ -69,6 +69,16 @@ class QuestionDetail(QuestionOut):
     agent_reports: list[AgentReportOut] = []
 
 
+class MoverCard(BaseModel):
+    question_id: int
+    question: str
+    category: str
+    current: float
+    previous: float
+    delta: float
+    window_days: int
+
+
 class FeedCard(BaseModel):
     question_id: int
     question: str
@@ -114,6 +124,11 @@ class StatsOut(BaseModel):
     market_accuracy: float | None
     vanta_brier: float | None
     market_brier: float | None
+    vanta_log_score: float | None
+    market_log_score: float | None
+    vanta_reliability: float | None
+    vanta_resolution: float | None
+    outcome_uncertainty: float | None
     avg_abs_edge: float | None
     llm_narratives: bool
 
