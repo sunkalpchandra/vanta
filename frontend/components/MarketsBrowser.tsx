@@ -297,6 +297,12 @@ function MarketRow({
       {open && (
         <div className="border-t border-line/60 bg-surface-2/40 px-5 py-4">
           {settled ? <SettledSummary market={market} /> : <TradeTicket market={market} />}
+          <a
+            href={`markets/${market.id}`}
+            className="micro-label mt-3 inline-block !text-accent hover:underline"
+          >
+            price history &amp; details →
+          </a>
         </div>
       )}
     </div>
