@@ -29,6 +29,27 @@ def count_statements(callable_):
     return statements
 
 
+def test_feed_shows_the_latest_forecast_by_time(client):
+    """Regression: the N+1 rewrite briefly picked max(id), which is a
+    backfilled HISTORY row for seeded questions (higher id, older timestamp) —
+    the feed showed day-old numbers."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import Forecast
+
+    feed = client.get("/api/feed").json()
+    with SessionLocal() as db:
+        for card in feed[:5]:
+            newest = db.scalar(
+                select(Forecast)
+                .where(Forecast.question_id == card["question_id"])
+                .order_by(Forecast.timestamp.desc(), Forecast.id.desc())
+                .limit(1)
+            )
+            assert card["vanta_probability"] == newest.probability, card["question_id"]
+
+
 def test_feed_is_constant_query_count(client):
     """Regression: the feed used to run one query per live question."""
     statements = count_statements(lambda: client.get("/api/feed"))
