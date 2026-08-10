@@ -77,8 +77,29 @@ def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depen
 
     pairs = latest_forecasts(db)
     pairs.sort(key=lambda pair: abs(pair[1].probability - pair[0].market_probability), reverse=True)
+    # A brief that's five takes on the same sector isn't a brief: cap each
+    # category at 2 slots, backfilling with the next-best edges if the cap
+    # would leave slots empty.
+    MAX_PER_CATEGORY = 2
+    picked: list = []
+    per_category: dict[str, int] = {}
+    for pair in pairs:
+        if len(picked) >= count:
+            break
+        cat = pair[0].category
+        if per_category.get(cat, 0) >= MAX_PER_CATEGORY:
+            continue
+        per_category[cat] = per_category.get(cat, 0) + 1
+        picked.append(pair)
+    if len(picked) < count:  # not enough category diversity — fill by edge
+        chosen = {id(p) for p in picked}
+        for pair in pairs:
+            if len(picked) >= count:
+                break
+            if id(pair) not in chosen:
+                picked.append(pair)
     items = []
-    for rank, (q, f) in enumerate(pairs[:count], start=1):
+    for rank, (q, f) in enumerate(picked[:count], start=1):
         edge = f.probability - q.market_probability
         direction = "underpricing" if edge > 0 else "overpricing"
         items.append(
