@@ -16,10 +16,38 @@ export function LiveControls({ questionId, resolved }: { questionId: number; res
   const [summary, setSummary] = useState("");
   const [sentiment, setSentiment] = useState<(typeof SENTIMENTS)[number]>("positive");
   const [impact, setImpact] = useState(0.5);
-  const [busy, setBusy] = useState<"evidence" | "resolve" | null>(null);
+  const [busy, setBusy] = useState<"evidence" | "resolve" | "market" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [marketPct, setMarketPct] = useState("");
 
   if (IS_STATIC || resolved) return null;
+
+  async function submitMarket(e: React.FormEvent) {
+    e.preventDefault();
+    const probability = Number(marketPct) / 100;
+    if (!(probability > 0 && probability < 1)) {
+      setError("Market price must be between 1 and 99 (%).");
+      return;
+    }
+    setBusy("market");
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/questions/${questionId}/market`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ probability }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      // A market move is new information — re-run the pipeline on it.
+      await fetch(`${API_URL}/api/questions/${questionId}/refresh`, { method: "POST" });
+      setMarketPct("");
+      router.refresh();
+    } catch {
+      setError("Market update failed — is the backend running?");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function submitEvidence(e: React.FormEvent) {
     e.preventDefault();
@@ -73,6 +101,29 @@ export function LiveControls({ questionId, resolved }: { questionId: number; res
         >
           {open ? "Cancel" : "+ Add evidence"}
         </button>
+        <form onSubmit={submitMarket} className="flex items-center gap-1.5">
+          <label htmlFor="mkt" className="micro-label">
+            market
+          </label>
+          <input
+            id="mkt"
+            type="number"
+            min={1}
+            max={99}
+            step={1}
+            value={marketPct}
+            onChange={(e) => setMarketPct(e.target.value)}
+            placeholder="%"
+            className="num w-16 rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs text-ink outline-none placeholder:text-muted focus:border-accent"
+          />
+          <button
+            type="submit"
+            disabled={busy !== null || marketPct === ""}
+            className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-40"
+          >
+            {busy === "market" ? "…" : "Set"}
+          </button>
+        </form>
         <div className="ml-auto flex items-center gap-2">
           <span className="micro-label">settle:</span>
           <button
