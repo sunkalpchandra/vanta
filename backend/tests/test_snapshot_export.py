@@ -34,6 +34,7 @@ DATA_TS_SNAPSHOT_NAMES = [
     "agents",
     "backtest",
     "sparklines",
+    "alerts",
     "meta",
 ]
 
@@ -48,6 +49,15 @@ def test_snapshot_top_level_files(snapshot_dir):
 def test_snapshot_brief_xml(snapshot_dir):
     rss = (snapshot_dir / "brief.xml").read_text()
     assert rss.startswith("<?xml") and "vanta Morning Brief" in rss
+
+
+def test_snapshot_related_and_agent_records(snapshot_dir):
+    questions = json.loads((snapshot_dir / "data" / "questions.json").read_text())
+    for q in questions:
+        assert (snapshot_dir / "data" / "related" / f"{q['id']}.json").exists()
+    for agent in ["research", "quant", "market", "sentiment", "historian", "synthesis"]:
+        assert (snapshot_dir / "data" / "agent-records" / f"{agent}.json").exists()
+    assert (snapshot_dir / "track-record.csv").read_text().startswith("question_id,")
 
 
 def test_snapshot_per_question_files(snapshot_dir):

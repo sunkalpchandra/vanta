@@ -24,6 +24,8 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     (data / "history").mkdir(parents=True, exist_ok=True)
     (data / "market-history").mkdir(parents=True, exist_ok=True)
     (data / "sensitivity").mkdir(parents=True, exist_ok=True)
+    (data / "related").mkdir(parents=True, exist_ok=True)
+    (data / "agent-records").mkdir(parents=True, exist_ok=True)
     (out_dir / "cards").mkdir(parents=True, exist_ok=True)
     written: list[str] = []
 
@@ -42,6 +44,7 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         "movers.json": "/api/feed/movers",
         "backtest.json": "/api/quant/backtest",
         "sparklines.json": "/api/feed/sparklines",
+        "alerts.json": "/api/alerts",
         "stats.json": "/api/stats",
         "categories.json": "/api/categories",
     }
@@ -63,16 +66,27 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
             data / "sensitivity" / f"{qid}.json",
             client.get(f"/api/questions/{qid}/sensitivity").json(),
         )
+        dump(data / "related" / f"{qid}.json", client.get(f"/api/questions/{qid}/related").json())
         card = client.get(f"/api/cards/{qid}.svg")
         card.raise_for_status()
         card_path = out_dir / "cards" / f"{qid}.svg"
         card_path.write_text(card.text)
         written.append(str(card_path.relative_to(out_dir)))
 
+    for agent_name in ["research", "quant", "market", "sentiment", "historian", "synthesis"]:
+        response = client.get(f"/api/agents/{agent_name}/records")
+        response.raise_for_status()
+        dump(data / "agent-records" / f"{agent_name}.json", response.json())
+
     rss = client.get("/api/brief/rss")
     rss.raise_for_status()
     (out_dir / "brief.xml").write_text(rss.text)
     written.append("brief.xml")
+
+    csv_response = client.get("/api/leaderboard/predictions.csv")
+    csv_response.raise_for_status()
+    (out_dir / "track-record.csv").write_text(csv_response.text)
+    written.append("track-record.csv")
 
     dump(data / "meta.json", {"mode": "static-demo", "questions": len(questions)})
     return written

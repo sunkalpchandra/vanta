@@ -18,6 +18,7 @@ next-env.d.ts
 frontend/public/data/
 frontend/public/cards/
 frontend/public/brief.xml
+frontend/public/track-record.csv
 
 # Env & secrets
 .env
