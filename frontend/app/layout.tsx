@@ -12,6 +12,7 @@ const NAV = [
   { href: "/", label: "Feed" },
   { href: "/brief", label: "Morning Brief" },
   { href: "/leaderboard", label: "Accuracy" },
+  { href: "/methodology", label: "Methodology" },
   { href: "/ask", label: "Ask vanta" },
 ];
 
@@ -40,10 +41,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">{children}</main>
         <footer className="border-t border-line py-6">
-          <p className="mx-auto max-w-6xl px-5 text-xs text-muted">
-            vanta is a forecasting intelligence system, not investment advice. Probabilities are model
-            outputs with irreducible uncertainty.
-          </p>
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5">
+            <p className="text-xs text-muted">
+              vanta is a forecasting intelligence system, not investment advice. Probabilities are
+              model outputs with irreducible uncertainty.
+            </p>
+            <a
+              href="https://github.com/sunkalpchandra/vanta"
+              className="text-xs text-muted transition-colors hover:text-ink-2"
+            >
+              github.com/sunkalpchandra/vanta ↗
+            </a>
+          </div>
         </footer>
       </body>
     </html>
