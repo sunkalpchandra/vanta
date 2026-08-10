@@ -12,10 +12,12 @@ export function FeedCardItem({
   card,
   index,
   sparkline,
+  onStarChange,
 }: {
   card: FeedCard;
   index: number;
   sparkline?: number[];
+  onStarChange?: () => void;
 }) {
   const discovery = Math.abs(card.edge) >= 0.05;
   const reduceMotion = useReducedMotion();
@@ -36,7 +38,7 @@ export function FeedCardItem({
           )}
           <CategoryBadge category={card.category} />
           <span className="micro-label ml-auto">{card.horizon_days}d horizon</span>
-          <StarButton questionId={card.question_id} />
+          <StarButton questionId={card.question_id} onChange={onStarChange} />
         </div>
         <h3 className="mt-3 text-[15px] font-semibold leading-snug text-ink">{card.question}</h3>
         <div className="mt-4 grid grid-cols-3 items-end gap-4">

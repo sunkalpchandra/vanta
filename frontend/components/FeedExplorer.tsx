@@ -19,8 +19,9 @@ export function FeedExplorer({
   const [starredIds, setStarredIds] = useState<number[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const refreshStars = () => import("@/lib/starred").then((m) => setStarredIds(m.getStarred()));
   useEffect(() => {
-    import("@/lib/starred").then((m) => setStarredIds(m.getStarred()));
+    refreshStars();
   }, [starredOnly]);
 
   // "/" focuses search from anywhere on the page (unless already typing).
@@ -102,6 +103,7 @@ export function FeedExplorer({
               card={card}
               index={i}
               sparkline={sparklines?.[String(card.question_id)]}
+              onStarChange={refreshStars}
             />
           ))}
         </div>
