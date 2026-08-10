@@ -39,6 +39,7 @@ export interface QuestionDetail extends QuestionOut {
   latest_forecast: ForecastOut | null;
   evidence: EvidenceOut[];
   agent_reports: AgentReportOut[];
+  difficulty: number | null;
 }
 
 export interface FeedCard {
