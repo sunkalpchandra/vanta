@@ -382,3 +382,58 @@ def test_settle_resolved_pays_outcome_set_without_settle(client):
         assert user.balance == pytest.approx(pre + 100.0)  # ⓥ1/share payout
         # Idempotent — a second sweep pays nothing more.
         assert settle_resolved(db) == 0
+
+
+def test_full_trade_lifecycle_via_api(client):
+    """End-to-end through the HTTP surface: register, buy, see it in the
+    portfolio, sell for a profit after the price moves, settle, cash out."""
+    from app.db import SessionLocal
+    from app.models import MarketEvent
+
+    reg = client.post("/api/users", json={"email": "lifecycle@example.com"})
+    key = reg.json()["api_key"]
+    headers = {"X-API-Key": key}
+
+    with SessionLocal() as db:
+        ev = MarketEvent(
+            source="test-trade", source_id="lifecycle-1", question="Lifecycle probe?",
+            category="other", active=True, yes_price=0.30, outcome=None,
+        )
+        db.add(ev)
+        db.commit()
+        event_id = ev.id
+
+    buy = client.post(
+        f"/api/markets/{event_id}/trade",
+        json={"side": "yes", "action": "buy", "shares": 100, "expected_price": 0.30},
+        headers=headers,
+    )
+    assert buy.status_code == 200
+    assert buy.json()["balance"] == 9970.0  # 100 × ⓥ0.30
+
+    port = client.get("/api/markets/portfolio/me", headers=headers).json()
+    assert any(p["event_id"] == event_id and p["shares"] == 100 for p in port["positions"])
+    assert "play money" in port["note"].lower()
+
+    # Price rises; a stale expected_price is rejected, the fresh one fills.
+    with SessionLocal() as db:
+        db.get(MarketEvent, event_id).yes_price = 0.55
+        db.commit()
+    stale = client.post(
+        f"/api/markets/{event_id}/trade",
+        json={"side": "yes", "action": "sell", "shares": 100, "expected_price": 0.30},
+        headers=headers,
+    )
+    assert stale.status_code == 409 and "price moved" in stale.json()["detail"]
+    sell = client.post(
+        f"/api/markets/{event_id}/trade",
+        json={"side": "yes", "action": "sell", "shares": 100, "expected_price": 0.55},
+        headers=headers,
+    )
+    assert sell.status_code == 200
+    assert sell.json()["balance"] == 10025.0  # 9970 + 100 × ⓥ0.55
+
+    # Appears on the trader leaderboard with a positive lifetime P&L.
+    board = client.get("/api/markets/traders").json()["traders"]
+    me = next((r for r in board if r.get("name", "").startswith("lifecycle")), None)
+    assert me is not None and me["lifetime_pnl"] > 0
