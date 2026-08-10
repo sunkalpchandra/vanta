@@ -38,6 +38,19 @@ class Question(Base):
     agent_reports: Mapped[list["AgentReport"]] = relationship(back_populates="question", cascade="all, delete-orphan")
 
 
+class MarketSnapshot(Base):
+    """Point-in-time market price for a question — the market side of the
+    market-vs-vanta chart. Question.market_probability mirrors the newest row."""
+
+    __tablename__ = "market_snapshots"
+    __table_args__ = (Index("ix_market_snapshots_question_ts", "question_id", "timestamp"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), index=True)
+    probability: Mapped[float] = mapped_column(Float)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Forecast(Base):
     __tablename__ = "forecasts"
     # Every hot read path is "newest forecast for question X" / "newest before
