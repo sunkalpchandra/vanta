@@ -76,6 +76,7 @@ ignored); frontend settings from `frontend/.env.local` — Next.js does not read
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS allow-origin |
 | `RATE_LIMIT_PER_MINUTE` | `240` | Mutating requests per client per minute; `0` disables |
 | `REQUIRE_API_KEY` | `false` | Require `X-API-Key` on operator mutations |
+| `GIT_SHA` | unset | Deployed commit, surfaced at `/api/meta` and in the baked snapshot's meta.json |
 
 **`frontend/.env.local`:**
 
