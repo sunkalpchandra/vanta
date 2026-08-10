@@ -89,6 +89,7 @@ def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depen
                 category=q.category,
                 market_probability=q.market_probability,
                 vanta_probability=f.probability,
+                confidence=f.confidence,
                 edge=round(edge, 4),
                 one_liner=(
                     f"Markets say {q.market_probability:.0%}, vanta says {f.probability:.0%} — "

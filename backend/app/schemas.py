@@ -95,6 +95,18 @@ class LeaderboardRow(BaseModel):
     market_brier: float
 
 
+class PredictionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    question_id: int | None
+    question_text: str
+    category: str
+    market_probability: float
+    vanta_probability: float
+    outcome: int
+    resolved_at: UTCDateTime
+
+
 class StatsOut(BaseModel):
     n_live_questions: int
     n_resolved: int
@@ -130,6 +142,7 @@ class BriefItem(BaseModel):
     category: str
     market_probability: float
     vanta_probability: float
+    confidence: float
     edge: float
     one_liner: str
 
