@@ -1,4 +1,9 @@
-.PHONY: dev-api dev-web test lint smoke snapshot static demo docker
+.PHONY: dev-api dev-web test lint smoke snapshot static demo docker verify
+
+# The full pre-push gate: lint, tests, live build, static build
+verify: lint test
+	cd frontend && npx next build
+	$(MAKE) static
 
 # Curl every endpoint against a running backend (make dev-api first)
 smoke:
