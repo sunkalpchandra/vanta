@@ -127,9 +127,9 @@ def morning_brief(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depen
 
 
 @router.get("/rss")
-def morning_brief_rss(db: Session = Depends(get_db)):
+def morning_brief_rss(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depends(get_db)):
     """The brief as RSS — subscribe to what the world is wrong about."""
-    items = morning_brief(count=5, db=db)
+    items = morning_brief(count=count, db=db)
     entries = "".join(
         f"""
   <item>
