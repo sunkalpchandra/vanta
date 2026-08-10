@@ -20,10 +20,10 @@ from app.agents.historian import base_rate_for
 from app.agents.orchestrator import run_pipeline
 from app.backtest import (
     PSEUDO_COUNT,
-    category_outcome_counts,
     context_for,
-    leave_one_out_base_rate,
+    resolved_corpus_timeline,
     run_backtest,
+    shrunk_base_rate,
     summarize,
 )
 from app.db import SessionLocal
@@ -111,25 +111,27 @@ def test_scores_only_resolved_events_with_preclose_price(corpus):
         assert set(corpus["meta_priced"]).isdisjoint(scored)  # 30d prices only
 
 
-def test_base_rate_excludes_self(corpus):
+def test_base_rate_is_strictly_temporal(corpus):
+    """An event's prior may only learn from events that closed BEFORE it —
+    never later resolutions, never itself. (The first version used corpus-wide
+    leave-one-out, which let the future leak into every prior.)"""
     with SessionLocal() as db:
-        counts = category_outcome_counts(db)
-        outcomes = db.scalars(
-            select(MarketEvent.outcome).where(
-                MarketEvent.category == CAT_MAIN, MarketEvent.outcome.is_not(None)
-            )
-        ).all()
-    n, yes = len(outcomes), sum(outcomes)
+        timeline = resolved_corpus_timeline(db)
+    # Timeline is close-time ascending and excludes unresolved rows.
+    times = [t for t, _, _ in timeline]
+    assert times == sorted(times)
+    assert all(outcome in (0, 1) for _, _, outcome in timeline)
+    # Cumulative prefix semantics: the prior for a hypothetical event closing
+    # at timeline[k]'s close counts exactly the k earlier events.
     static = base_rate_for(CAT_MAIN)
-    for own in (0, 1):
-        expected = (static * PSEUDO_COUNT + yes - own) / (PSEUDO_COUNT + n - 1)
-        assert leave_one_out_base_rate(counts, CAT_MAIN, own) == pytest.approx(expected)
-    # Different own outcomes must yield different priors — proof of exclusion.
-    assert leave_one_out_base_rate(counts, CAT_MAIN, 1) != leave_one_out_base_rate(counts, CAT_MAIN, 0)
-    # A category whose only resolved event is the one being scored: nothing
-    # remains to learn from, so the static prior stands.
-    assert leave_one_out_base_rate(counts, CAT_SOLO, 1) == base_rate_for(CAT_SOLO)
-    assert leave_one_out_base_rate(counts, "bt-nonexistent", 1) == base_rate_for("bt-nonexistent")
+    main_rows = [(t, o) for t, c, o in timeline if c == CAT_MAIN]
+    cutoff = main_rows[-1][0]  # the last main-category close
+    prior_rows = [o for t, o in main_rows if t < cutoff]
+    expected = (static * PSEUDO_COUNT + sum(prior_rows)) / (PSEUDO_COUNT + len(prior_rows))
+    assert shrunk_base_rate(CAT_MAIN, len(prior_rows), sum(prior_rows)) == pytest.approx(expected)
+    # Nothing settled yet -> the static prior stands.
+    assert shrunk_base_rate(CAT_SOLO, 0, 0) == base_rate_for(CAT_SOLO)
+    assert shrunk_base_rate("bt-nonexistent", 0, 0) == base_rate_for("bt-nonexistent")
 
 
 def test_rerun_is_idempotent(corpus):
@@ -168,10 +170,18 @@ def test_market_and_vanta_scored_on_identical_inputs(corpus):
         # The market side is exactly the T-7 price the pipeline was given.
         assert stored.market_probability == event.price_7d
         # Rebuilding the same context reproduces vanta's number exactly:
-        # deterministic pipeline, identical information for both sides.
-        counts = category_outcome_counts(db)
-        ctx = context_for(event, 7, leave_one_out_base_rate(counts, event.category, event.outcome))
+        # deterministic pipeline, identical information for both sides. The
+        # prior counts only events that closed before this one.
+        close = event.close_time
+        prior = [
+            outcome
+            for t, cat, outcome in resolved_corpus_timeline(db)
+            if cat == event.category and t < close
+        ]
+        base_rate = shrunk_base_rate(event.category, len(prior), sum(prior))
+        ctx = context_for(event, 7, base_rate)
         assert ctx.evidence == [] and ctx.narratives is False
+        assert ctx.analog_corpus == []  # hindsight fixture disabled in backtests
         assert run_pipeline(ctx).probability == stored.vanta_probability
         assert stored.outcome == event.outcome
 
