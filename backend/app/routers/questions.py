@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Forecast, Question
-from ..schemas import AskRequest, ForecastOut, HistoryPoint, QuestionDetail, QuestionOut
-from ..service import create_question, run_and_store_forecast
+from ..schemas import AskRequest, ForecastOut, HistoryPoint, QuestionDetail, QuestionOut, ResolveRequest
+from ..service import ResolutionError, create_question, resolve_question, run_and_store_forecast
 
 router = APIRouter(prefix="/api/questions", tags=["questions"])
 
@@ -56,7 +56,21 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
 @router.post("/{question_id}/refresh", response_model=QuestionDetail)
 def refresh_forecast(question_id: int, db: Session = Depends(get_db)):
     question = _get_question_or_404(db, question_id)
+    if question.resolved:
+        raise HTTPException(status_code=409, detail="question is resolved; forecasts are frozen")
     run_and_store_forecast(db, question)
+    return _detail(db, question)
+
+
+@router.post("/{question_id}/resolve", response_model=QuestionDetail)
+def resolve(question_id: int, body: ResolveRequest, db: Session = Depends(get_db)):
+    """Settle the question against reality. Freezes forecasting and writes the
+    resolved prediction that feeds the accuracy leaderboard."""
+    question = _get_question_or_404(db, question_id)
+    try:
+        resolve_question(db, question, body.outcome)
+    except ResolutionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
 
 
