@@ -82,6 +82,19 @@ class AgentReport(Base):
     question: Mapped[Question] = relationship(back_populates="agent_reports")
 
 
+class WatchlistItem(Base):
+    """User-added discovery candidates, merged with the built-in watchlist."""
+
+    __tablename__ = "watchlist_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question: Mapped[str] = mapped_column(Text, unique=True)
+    category: Mapped[str] = mapped_column(String(50))
+    horizon_days: Mapped[int] = mapped_column(Integer, default=90)
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class AgentTrackRecord(Base):
     """Frozen per-agent probability at resolution time — the internal
     forecaster competition. Written by resolve_question from the final
