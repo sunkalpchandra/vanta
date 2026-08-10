@@ -36,10 +36,16 @@ def _latest_forecast(db: Session, question_id: int) -> Forecast | None:
 
 
 @router.get("", response_model=list[QuestionOut])
-def list_questions(category: str | None = None, db: Session = Depends(get_db)):
+def list_questions(
+    category: str | None = None,
+    resolved: bool | None = None,
+    db: Session = Depends(get_db),
+):
     stmt = select(Question).order_by(Question.created_at.desc())
     if category:
         stmt = stmt.where(Question.category == category)
+    if resolved is not None:
+        stmt = stmt.where(Question.resolved.is_(resolved))
     return db.scalars(stmt).all()
 
 
