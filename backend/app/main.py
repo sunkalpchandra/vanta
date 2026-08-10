@@ -13,7 +13,21 @@ from fastapi.responses import JSONResponse
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .llm import llm_available
-from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, search, stats, users
+from .routers import (
+    agents,
+    alerts,
+    backtest,
+    brief,
+    cards,
+    chat,
+    discover,
+    feed,
+    leaderboard,
+    questions,
+    search,
+    stats,
+    users,
+)
 from .seed import seed_if_empty
 
 logger = logging.getLogger("vanta")
@@ -29,6 +43,7 @@ CACHE_RULES: list[tuple[str, int]] = [
     ("/api/categories", 300),
     ("/api/agents/leaderboard", 60),
     ("/api/quant/backtest", 3600),
+    ("/api/backtest/real", 300),
 ]
 
 
@@ -57,6 +72,8 @@ app = FastAPI(
         {"name": "search", "description": "Unified search over live questions and the archive."},
         {"name": "users", "description": "Operator registration and identity."},
         {"name": "cards", "description": "Self-contained SVG share cards."},
+        {"name": "backtest", "description": "Leakage-free backtest of the pipeline over real ingested markets."},
+        {"name": "chat", "description": "Real-time reasoning chat — SSE stream of the agent debate."},
     ],
 )
 
@@ -155,6 +172,8 @@ app.include_router(agents.router)
 app.include_router(alerts.router)
 app.include_router(users.router)
 app.include_router(search.router)
+app.include_router(backtest.router)
+app.include_router(chat.router)
 
 
 @app.get("/metrics")
