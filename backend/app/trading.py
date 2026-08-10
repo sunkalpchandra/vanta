@@ -15,12 +15,18 @@ Business rejections raise TradeError, which the API layer maps to HTTP 409.
 
 from __future__ import annotations
 
+import math
+from datetime import UTC
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .models import MarketEvent, Position, Trade, User, utcnow
 
 STARTING_BALANCE = 10_000.0
+
+# Max drift between the price the trader saw and the fill price (2 cents).
+SLIPPAGE_TOLERANCE = 0.02
 
 # Below this, a buy's cost would round to ⓥ0.00 — free shares. Reject.
 MIN_NOTIONAL = 0.01
@@ -33,6 +39,18 @@ class TradeError(Exception):
 def _round_money(amount: float) -> float:
     # `+ 0.0` normalizes -0.0 to 0.0 so serialized balances never show "-0.0".
     return round(amount, 2) + 0.0
+
+
+def _debit(amount: float) -> float:
+    """Round a charge-to-the-trader UP to the cent. Paired with _credit's
+    round-down, every trade's rounding favors the house, so no sequence of
+    dust trades can mint credits (the round-half-even pump the review found)."""
+    return math.ceil(amount * 100 - 1e-9) / 100 + 0.0
+
+
+def _credit(amount: float) -> float:
+    """Round a payout-to-the-trader DOWN to the cent (see _debit)."""
+    return math.floor(amount * 100 + 1e-9) / 100 + 0.0
 
 
 def exec_price(event: MarketEvent, side: str) -> float:
@@ -57,6 +75,13 @@ def _validate_tradeable(event: MarketEvent, side: str, action: str, shares: floa
         raise TradeError("event has no synced price yet")
     if not 0.0 < event.yes_price < 1.0:
         raise TradeError("venue price is outside (0, 1) — not tradeable")
+    # Past the stated close the synced price is stale (the event may already
+    # have resolved off-feed); refuse rather than fill at a price that no
+    # longer reflects reality, until the sync flips it inactive/resolved.
+    if event.close_time is not None:
+        close = event.close_time if event.close_time.tzinfo else event.close_time.replace(tzinfo=UTC)
+        if close <= utcnow():
+            raise TradeError("event has passed its close time — trading is halted pending settlement")
 
 
 def execute_trade(
@@ -66,16 +91,23 @@ def execute_trade(
     side: str,
     action: str,
     shares: float,
+    expected_price: float | None = None,
 ) -> Trade:
     """Execute one play-money buy/sell at the current synced price.
 
     All mutations (position upsert, balance move, trade log) commit in one
     transaction. Returns the appended Trade row; its `shares` is the executed
     quantity (sells are capped at held shares) and `cost` is the signed
-    balance delta (negative = credits spent).
+    balance delta (negative = credits spent). expected_price, when given, is
+    the price the caller saw; the fill is rejected if it has drifted past
+    SLIPPAGE_TOLERANCE.
     """
     _validate_tradeable(event, side, action, shares)
     price = exec_price(event, side)
+    if expected_price is not None and abs(price - expected_price) > SLIPPAGE_TOLERANCE:
+        raise TradeError(
+            f"price moved: you saw {expected_price:.0%}, now {price:.0%} — re-check and retry"
+        )
 
     position = db.scalar(
         select(Position).where(
@@ -87,10 +119,12 @@ def execute_trade(
     if position is not None and position.settled:
         raise TradeError("position already settled")
 
+    # Floor on TRUE notional (shares × price), checked before rounding, on both
+    # sides — otherwise sub-cent lots slip under the rounding grain and pump.
     if action == "buy":
-        cost = _round_money(shares * price)
-        if cost < MIN_NOTIONAL:
-            raise TradeError(f"trade too small — cost must be at least ⓥ{MIN_NOTIONAL:.2f}")
+        if shares * price < MIN_NOTIONAL:
+            raise TradeError(f"trade too small — notional must be at least ⓥ{MIN_NOTIONAL:.2f}")
+        cost = _debit(shares * price)  # trader pays, round up
         if cost > user.balance + 1e-9:
             raise TradeError(f"insufficient balance: cost ⓥ{cost:.2f} exceeds ⓥ{user.balance:.2f}")
         if position is None:
@@ -105,7 +139,11 @@ def execute_trade(
         if position is None or position.shares <= 0:
             raise TradeError("no shares to sell")
         executed = min(shares, position.shares)  # cap at held
-        proceeds = _round_money(executed * price)
+        if executed * price < MIN_NOTIONAL and executed < position.shares - 1e-9:
+            # Dust sells are only allowed as a full exit (so a holder can always
+            # close out), never as a repeatable rounding skim.
+            raise TradeError(f"sell too small — notional must be at least ⓥ{MIN_NOTIONAL:.2f}")
+        proceeds = _credit(executed * price)  # trader receives, round down
         realized = _round_money(executed * (price - position.avg_price))
         position.shares = round(position.shares - executed, 9)
         if position.shares < 1e-9:
@@ -141,7 +179,7 @@ def settle_event(db: Session, event: MarketEvent) -> int:
     positions = db.scalars(select(Position).where(Position.event_id == event.id, Position.settled.is_(False))).all()
     for position in positions:
         payout_per_share = 1.0 if position.side == winning_side else 0.0
-        payout = _round_money(position.shares * payout_per_share)
+        payout = _credit(position.shares * payout_per_share)
         if payout:
             holder = db.get(User, position.user_id)
             holder.balance = _round_money(holder.balance + payout)
@@ -152,6 +190,26 @@ def settle_event(db: Session, event: MarketEvent) -> int:
         position.updated_at = utcnow()
     db.commit()
     return len(positions)
+
+
+def settle_resolved(db: Session) -> int:
+    """Pay out EVERY resolved event that still has unsettled positions —
+    regardless of which writer recorded the outcome (the sweep, sync_active's
+    venue-close branch, or a manual resolve). Settlement is driven by unpaid
+    positions, not by a time window or an outcome-just-flipped signal, so no
+    payout can be orphaned. Returns the number of positions paid.
+    """
+    event_ids = db.scalars(
+        select(Position.event_id)
+        .join(MarketEvent, Position.event_id == MarketEvent.id)
+        .where(Position.settled.is_(False), MarketEvent.outcome.is_not(None))
+        .distinct()
+    ).all()
+    paid = 0
+    for event_id in event_ids:
+        event = db.get(MarketEvent, event_id)
+        paid += settle_event(db, event)
+    return paid
 
 
 def _mark_price(event: MarketEvent, side: str) -> float | None:
