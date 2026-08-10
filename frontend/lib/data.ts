@@ -9,6 +9,8 @@ import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
   TraderBoard,
+  TradeTapeItem,
+  MarketHistoryPoint,
   RealBacktestOut,
   AgentCalibrationBin,
   AgentLeaderboardRow,
@@ -141,3 +143,29 @@ export async function getMarketsSample(): Promise<MarketsSample | null> {
 
 export const getTraderBoard = () =>
   get<TraderBoard | null>("/api/markets/traders", "traders.json", null);
+
+
+// Activity tape: baked file in static mode, live endpoint otherwise.
+export async function getActivitySample(): Promise<TradeTapeItem[]> {
+  if (IS_STATIC) {
+    const feed = await readSnapshot<{ trades?: TradeTapeItem[] }>("activity.json", { trades: [] });
+    return feed.trades ?? [];
+  }
+  const feed = await get<{ trades?: TradeTapeItem[] }>("/api/activity/trades?limit=30", "activity.json", {
+    trades: [],
+  });
+  return feed.trades ?? [];
+}
+
+export async function getMarketPriceHistory(id: string): Promise<MarketHistoryPoint[]> {
+  if (IS_STATIC) {
+    const h = await readSnapshot<{ points?: MarketHistoryPoint[] }>(`market-price/${id}.json`, { points: [] });
+    return h.points ?? [];
+  }
+  const h = await get<{ points?: MarketHistoryPoint[] }>(
+    `/api/markets/${id}/history`,
+    `market-price/${id}.json`,
+    { points: [] },
+  );
+  return h.points ?? [];
+}

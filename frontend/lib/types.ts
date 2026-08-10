@@ -258,3 +258,10 @@ export interface TraderBoard {
   traders: TraderRow[];
   note?: string;
 }
+
+export interface MarketHistoryPoint {
+  timestamp: string;
+  yes_price: number;
+}
+
+export type { TradeTapeItem } from "./activity";
