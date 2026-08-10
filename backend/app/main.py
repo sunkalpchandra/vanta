@@ -8,7 +8,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .llm import llm_available
-from .routers import agents, brief, cards, discover, feed, leaderboard, questions, stats
+from .routers import agents, alerts, brief, cards, discover, feed, leaderboard, questions, stats
 from .seed import seed_if_empty
 
 # Read endpoints that tolerate short staleness get client/proxy caching.
@@ -69,6 +69,7 @@ app.include_router(cards.router)
 app.include_router(stats.router)
 app.include_router(discover.router)
 app.include_router(agents.router)
+app.include_router(alerts.router)
 
 
 @app.get("/api/meta")
