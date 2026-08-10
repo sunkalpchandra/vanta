@@ -58,10 +58,15 @@ def predictions(
 
 
 @router.get("/calibration", response_model=list[CalibrationBinOut])
-def calibration(db: Session = Depends(get_db)):
+def calibration(category: str | None = None, db: Session = Depends(get_db)):
     """Reliability-diagram bins for vanta vs the market over resolved questions.
     A calibrated forecaster's observed rates track its predicted rates."""
-    predictions = db.scalars(select(Prediction)).all()
+    stmt = select(Prediction)
+    if category:
+        stmt = stmt.where(Prediction.category == category)
+    predictions = db.scalars(stmt).all()
+    if not predictions:
+        return []
     vanta = calibration_bins([(p.vanta_probability, p.outcome) for p in predictions])
     market = calibration_bins([(p.market_probability, p.outcome) for p in predictions])
     return [
