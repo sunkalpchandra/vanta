@@ -37,6 +37,13 @@ def test_feed_ranked_by_absolute_edge(client):
     assert edges == sorted(edges, reverse=True)
 
 
+def test_feed_limit_caps_and_keeps_top_edges(client):
+    full = client.get("/api/feed").json()
+    limited = client.get("/api/feed?limit=3").json()
+    assert len(limited) == 3
+    assert [c["question_id"] for c in limited] == [c["question_id"] for c in full[:3]]
+
+
 def test_history_returns_series(client):
     # Oldest question = seeded with 30-day backfill (list is newest-first, and
     # other test modules may have minted newer questions with short histories).
