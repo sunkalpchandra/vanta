@@ -123,12 +123,18 @@ describe("money helpers", () => {
   });
 
   it("previews cost at 2dp and rejects invalid inputs", () => {
-    expect(tradeCost(10, 0.63)).toBe(6.3);
-    expect(tradeCost(7, 0.33)).toBe(2.31);
-    expect(tradeCost(0, 0.5)).toBeNull();
-    expect(tradeCost(-3, 0.5)).toBeNull();
-    expect(tradeCost(10, null)).toBeNull();
-    expect(tradeCost(10, 1)).toBeNull();
+    expect(tradeCost(10, 0.63, "buy")).toBe(6.3);
+    expect(tradeCost(7, 0.33, "buy")).toBe(2.31);
+    expect(tradeCost(0, 0.5, "buy")).toBeNull();
+    expect(tradeCost(-3, 0.5, "buy")).toBeNull();
+    expect(tradeCost(10, null, "buy")).toBeNull();
+    expect(tradeCost(10, 1, "buy")).toBeNull();
+  });
+
+  it("rounds a half-cent buy UP and sell DOWN to match backend cents", () => {
+    // 1 share × ⓥ0.125 = ⓥ0.125 → exactly half a cent.
+    expect(tradeCost(1, 0.125, "buy")).toBe(0.13);
+    expect(tradeCost(1, 0.125, "sell")).toBe(0.12);
   });
 
   it("formats ⓥ credits", () => {

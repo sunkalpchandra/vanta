@@ -6,6 +6,7 @@ import { IS_STATIC } from "@/lib/config";
 import { pct } from "@/lib/format";
 import {
   authHeaders,
+  clearTraderKey,
   ensureTrader,
   fmtCredits,
   getTraderKey,
@@ -19,12 +20,22 @@ import {
 const PLAY_MONEY_LINE = "Play money — paper trading at real market prices.";
 
 /** Inline buy/sell ticket for one active market. Virtual ⓥ credits only. */
-export function TradeTicket({ market }: { market: MarketItem }) {
+export function TradeTicket({
+  market,
+  onPriceStale,
+}: {
+  market: MarketItem;
+  /** Optional: called when the backend rejects a trade because the price moved,
+   *  so the parent can refetch the live price. Absent → the drift is surfaced only. */
+  onPriceStale?: () => void;
+}) {
   const [side, setSide] = useState<"yes" | "no">("yes");
   const [action, setAction] = useState<"buy" | "sell">("buy");
   const [shares, setShares] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Distinct, prominent notice for a rejected-on-drift (409 "price moved") fill.
+  const [staleNotice, setStaleNotice] = useState<string | null>(null);
   const [result, setResult] = useState<TradeResponse | null>(null);
   // Hydration-safe: read localStorage only after mount.
   const [hasKey, setHasKey] = useState(false);
@@ -56,12 +67,13 @@ export function TradeTicket({ market }: { market: MarketItem }) {
 
   const price = sidePrice(market.yes_price, side);
   const qty = Number(shares);
-  const preview = tradeCost(qty, price);
+  const preview = tradeCost(qty, price, action);
 
   async function register(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setStaleNotice(null);
     try {
       await ensureTrader(email);
       setHasKey(true);
@@ -78,18 +90,39 @@ export function TradeTicket({ market }: { market: MarketItem }) {
       setError("Enter a share quantity above zero.");
       return;
     }
+    if (price === null) {
+      setError("No live price for this side right now — try again shortly.");
+      return;
+    }
     setBusy(true);
     setError(null);
+    setStaleNotice(null);
     setResult(null);
     try {
       const res = await fetch(`${API_URL}/api/markets/${market.id}/trade`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ side, action, shares: qty }),
+        // expected_price = the exact YES/NO price this ticket is showing for the
+        // selected side; the backend 409s if the live price has drifted >0.02.
+        body: JSON.stringify({ side, action, shares: qty, expected_price: price }),
       });
       if (res.status === 401) {
+        // The stored key is stale/unknown; drop it BEFORE surfacing the error so
+        // the onboarding path works on the next attempt instead of looping.
+        clearTraderKey();
         setHasKey(false);
-        throw new Error("Trading key rejected — register again to keep trading.");
+        throw new Error(
+          "Your trading key is no longer valid — start trading again to get a new play-money key.",
+        );
+      }
+      if (res.status === 409) {
+        const detail = await readableError(res, "Price moved before your order filled — try again.");
+        if (/price moved/i.test(detail)) {
+          setStaleNotice(detail);
+          onPriceStale?.(); // let the parent refetch the live price, if it can
+          return; // handled: shown prominently, not as a generic error
+        }
+        throw new Error(detail);
       }
       if (!res.ok) throw new Error(await readableError(res, `Trade failed (${res.status}).`));
       setResult((await res.json()) as TradeResponse);
@@ -200,6 +233,14 @@ export function TradeTicket({ market }: { market: MarketItem }) {
             {busy ? "Working…" : `${action === "buy" ? "Buy" : "Sell"} ${side.toUpperCase()}`}
           </button>
         </form>
+      )}
+      {staleNotice && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg border border-neg bg-surface-2 px-3 py-2 text-xs font-semibold text-neg"
+        >
+          {staleNotice} — the price updated; review it and resubmit.
+        </p>
       )}
       {error && <p className="mt-3 text-xs text-neg">{error}</p>}
       {result && (

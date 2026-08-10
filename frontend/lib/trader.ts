@@ -87,10 +87,19 @@ export function sidePrice(yesPrice: number | null, side: "yes" | "no"): number |
   return side === "yes" ? yesPrice : 1 - yesPrice;
 }
 
-/** Cost/proceeds preview: shares × price, 2dp. Null when inputs are invalid. */
-export function tradeCost(shares: number, price: number | null): number | null {
+/**
+ * Cost/proceeds preview, rounded to the cent to match the backend: buys round
+ * the cost UP (you never pay less than the true notional), sells round the
+ * proceeds DOWN. Null when inputs are invalid.
+ */
+export function tradeCost(
+  shares: number,
+  price: number | null,
+  direction: "buy" | "sell",
+): number | null {
   if (price === null || !(shares > 0) || !(price > 0 && price < 1)) return null;
-  return round2(shares * price);
+  const cents = shares * price * 100;
+  return (direction === "buy" ? Math.ceil(cents) : Math.floor(cents)) / 100;
 }
 
 /** ⓥ credit amount, always 2dp. */
