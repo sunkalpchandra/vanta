@@ -6,6 +6,7 @@ import type { FeedCard } from "@/lib/types";
 import { pct } from "@/lib/format";
 import { CategoryBadge, EdgeBadge } from "./Badges";
 import { Sparkline } from "./Sparkline";
+import { StarButton } from "./StarButton";
 
 export function FeedCardItem({
   card,
@@ -35,6 +36,7 @@ export function FeedCardItem({
           )}
           <CategoryBadge category={card.category} />
           <span className="micro-label ml-auto">{card.horizon_days}d horizon</span>
+          <StarButton questionId={card.question_id} />
         </div>
         <h3 className="mt-3 text-[15px] font-semibold leading-snug text-ink">{card.question}</h3>
         <div className="mt-4 grid grid-cols-3 items-end gap-4">
