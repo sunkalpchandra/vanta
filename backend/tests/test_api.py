@@ -1,18 +1,7 @@
-import os
-import tempfile
-
 import pytest
 from fastapi.testclient import TestClient
 
-# Isolated DB per test session, configured before the app module is imported.
-_tmpdir = tempfile.mkdtemp()
-os.environ["DATABASE_URL"] = f"sqlite:///{_tmpdir}/test.db"
-
-from app.config import get_settings  # noqa: E402
-
-get_settings.cache_clear()
-
-from app.main import app  # noqa: E402
+from app.main import app  # DB binding happens in conftest.py
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +38,9 @@ def test_feed_ranked_by_absolute_edge(client):
 
 
 def test_history_returns_series(client):
-    qid = client.get("/api/questions").json()[0]["id"]
+    # Oldest question = seeded with 30-day backfill (list is newest-first, and
+    # other test modules may have minted newer questions with short histories).
+    qid = client.get("/api/questions").json()[-1]["id"]
     history = client.get(f"/api/questions/{qid}/history").json()
     assert len(history) >= 30
 

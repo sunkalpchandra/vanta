@@ -1,23 +1,14 @@
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-_tmpdir = tempfile.mkdtemp()
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{_tmpdir}/test_snapshot.db")
-
-from app.config import get_settings  # noqa: E402
-
-get_settings.cache_clear()
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from export_snapshot import export_snapshot  # noqa: E402
 
-from app.main import app  # noqa: E402
+from app.main import app  # noqa: E402  # DB binding happens in conftest.py
 
 
 @pytest.fixture(scope="module")

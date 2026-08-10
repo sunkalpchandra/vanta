@@ -1,17 +1,7 @@
-import os
-import tempfile
-
 import pytest
 from fastapi.testclient import TestClient
 
-_tmpdir = tempfile.mkdtemp()
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{_tmpdir}/test_stats.db")
-
-from app.config import get_settings  # noqa: E402
-
-get_settings.cache_clear()
-
-from app.main import app  # noqa: E402
+from app.main import app  # DB binding happens in conftest.py
 
 
 @pytest.fixture(scope="module")
