@@ -1,6 +1,8 @@
+import csv
+import io
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -55,6 +57,33 @@ def predictions(
     if category:
         stmt = stmt.where(Prediction.category == category)
     return db.scalars(stmt).all()
+
+
+@router.get("/predictions.csv")
+def predictions_csv(db: Session = Depends(get_db)):
+    """The resolved track record as CSV — for spreadsheets and notebooks."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        ["question_id", "question", "category", "market_probability", "vanta_probability", "outcome", "resolved_at"]
+    )
+    for p in db.scalars(select(Prediction).order_by(Prediction.resolved_at.desc())).all():
+        writer.writerow(
+            [
+                p.question_id or "",
+                p.question_text,
+                p.category,
+                p.market_probability,
+                p.vanta_probability,
+                p.outcome,
+                p.resolved_at.isoformat(),
+            ]
+        )
+    return Response(
+        content=buffer.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="vanta-track-record.csv"'},
+    )
 
 
 @router.get("/calibration", response_model=list[CalibrationBinOut])
