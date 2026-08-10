@@ -8,6 +8,7 @@
 import { API_URL } from "./api";
 import { IS_STATIC } from "./config";
 import type {
+  AgentCalibrationBin,
   AgentLeaderboardRow,
   AgentRecord,
   AlertItem,
@@ -15,6 +16,7 @@ import type {
   BriefItem,
   CalibrationBin,
   CategoryOut,
+  ChangesOut,
   FeedCard,
   HistoryPoint,
   LeaderboardRow,
@@ -79,6 +81,10 @@ export const getRelated = (id: string) =>
 export const getAlerts = () => get<AlertItem[]>("/api/alerts", "alerts.json", []);
 export const getAgentRecords = (name: string) =>
   get<AgentRecord[]>(`/api/agents/${name}/records`, `agent-records/${name}.json`, []);
+export const getAgentCalibration = (name: string) =>
+  get<AgentCalibrationBin[]>(`/api/agents/${name}/calibration`, `agent-calibration/${name}.json`, []);
+export const getChanges = (id: string) =>
+  get<ChangesOut | null>(`/api/questions/${id}/changes`, `changes/${id}.json`, null);
 export const getSensitivity = (id: string) =>
   get<{ items: SensitivityItem[] }>(
     `/api/questions/${id}/sensitivity`,
