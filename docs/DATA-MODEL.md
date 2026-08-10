@@ -44,6 +44,11 @@ market and vanta probabilities at settlement, and the outcome. Powers the accura
 leaderboard. Rows with `question_id = NULL` are the seeded reference corpus; rows with a
 value came from a live question resolving.
 
+**question_notes** — operator annotations that aren't evidence: resolution-criteria
+clarifications, source caveats, follow-ups. Body is validated non-whitespace (3–1000
+chars). Live-backend-only — the static demo has no operator, so notes are neither seeded
+nor exported to the snapshot.
+
 **watchlist_items** — user-added discovery candidates (`question` text is unique, so the
 watchlist deduplicates itself), merged with the built-in watchlist that autonomous research
 mints questions from.
@@ -97,13 +102,13 @@ a no-op there — the wire format is identical either way.
 
 ```
   users                          watchlist_items
-  (standalone — auth not wired)  (standalone — question text UNIQUE)
+  (standalone — opt-in key gating)  (standalone — question text UNIQUE)
 
                           questions
                               │ 1
-     ┌───────────┬────────────┼─────────────┬────────────────┐
-     │ *         │ *          │ *           │ *              │ *
- forecasts  market_snapshots  evidence  agent_reports  agent_track_records
+     ┌───────────┬────────────┼─────────────┬────────────────┬──────────────┐
+     │ *         │ *          │ *           │ *              │ *            │ *
+ forecasts  market_snapshots  evidence  agent_reports  agent_track_records  question_notes
  (append,   (append,          (append   (REPLACED      (frozen per agent
   composite  composite         per       each run —     at resolution)
   ts index)  ts index)         signal)   latest only)
