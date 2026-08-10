@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { TraderBoard } from "@/lib/types";
 import { fmtSignedCredits } from "@/lib/trader";
 
@@ -10,9 +11,9 @@ export function TraderLeaderboard({ board }: { board: TraderBoard | null }) {
     return (
       <div className="card p-6 text-sm text-muted">
         No traders yet — be the first to open a position on the{" "}
-        <a href="markets/" className="text-accent hover:underline">
+        <Link href="/markets" className="text-accent hover:underline">
           markets
-        </a>{" "}
+        </Link>{" "}
         page.
       </div>
     );

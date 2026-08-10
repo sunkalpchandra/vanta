@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { CATEGORIES } from "@/lib/categories";
@@ -297,12 +298,12 @@ function MarketRow({
       {open && (
         <div className="border-t border-line/60 bg-surface-2/40 px-5 py-4">
           {settled ? <SettledSummary market={market} /> : <TradeTicket market={market} />}
-          <a
-            href={`markets/${market.id}`}
+          <Link
+            href={`/markets/${market.id}`}
             className="micro-label mt-3 inline-block !text-accent hover:underline"
           >
             price history &amp; details →
-          </a>
+          </Link>
         </div>
       )}
     </div>
