@@ -27,7 +27,8 @@ class SynthesisAgent(Agent):
             if o.probability is not None and o.weight > 0
         ]
         pooled = pool(estimates)
-        final_p = shrink_to_base_rate(pooled, base_rate_for(ctx.category), strength=0.12)
+        base = ctx.base_rate if ctx.base_rate is not None else base_rate_for(ctx.category)
+        final_p = shrink_to_base_rate(pooled, base, strength=0.12)
 
         confidence = agreement_confidence(estimates, pooled)
         skeptic = find_output(prior_outputs, "skeptic")
