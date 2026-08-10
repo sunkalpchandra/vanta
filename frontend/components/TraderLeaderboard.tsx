@@ -25,7 +25,12 @@ export function TraderLeaderboard({ board }: { board: TraderBoard | null }) {
         return (
           <div key={t.user_id} className="flex items-center gap-4 px-5 py-3">
             <span className="num w-6 text-right text-sm text-muted">{i + 1}</span>
-            <span className="flex-1 truncate text-sm text-ink">{t.name}</span>
+            <Link
+              href={`/traders/${encodeURIComponent(t.name)}`}
+              className="flex-1 truncate text-sm text-ink transition-colors hover:text-accent"
+            >
+              {t.name}
+            </Link>
             <span className="num hidden text-xs text-muted sm:block">{t.n_trades} trades</span>
             <span className="num w-24 text-right text-sm text-ink-2">
               ⓥ{t.equity.toLocaleString("en-US", { maximumFractionDigits: 0 })}
