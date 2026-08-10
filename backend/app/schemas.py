@@ -184,6 +184,15 @@ class ResolveRequest(BaseModel):
     outcome: bool
 
 
+class MarketUpdateRequest(BaseModel):
+    probability: float = Field(gt=0, lt=1)
+
+
+class MarketPoint(BaseModel):
+    timestamp: UTCDateTime
+    probability: float
+
+
 class EvidenceIn(BaseModel):
     source: str = Field(min_length=2, max_length=100)
     summary: str = Field(min_length=10, max_length=500)
