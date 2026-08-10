@@ -18,7 +18,7 @@ const AGENT_META: Record<string, { title: string; blurb: string }> = {
 export function DebatePanel({ reports }: { reports: AgentReportOut[] }) {
   const reduceMotion = useReducedMotion();
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="debate-panel">
       {reports.map((report, i) => {
         const meta = AGENT_META[report.agent] ?? { title: report.agent, blurb: "" };
         const isSynthesis = report.agent === "synthesis";
