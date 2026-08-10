@@ -278,3 +278,16 @@ class AgentTrader(Base):
     strategy: Mapped[str] = mapped_column(String(40))  # edge | contrarian | confidence
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MarketWatch(Base):
+    """A trader's watch on a market event — powers the per-user watchlist and
+    move alerts. Unique per (user, event)."""
+
+    __tablename__ = "market_watches"
+    __table_args__ = (Index("ix_market_watches_user_event", "user_id", "event_id", unique=True),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
