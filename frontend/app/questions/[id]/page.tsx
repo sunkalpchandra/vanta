@@ -6,6 +6,7 @@ import { ConfidenceMeter } from "@/components/ConfidenceMeter";
 import { DebatePanel } from "@/components/DebatePanel";
 import { EvidenceList } from "@/components/EvidenceList";
 import { LiveControls } from "@/components/LiveControls";
+import { NotesPanel } from "@/components/NotesPanel";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { RelatedQuestions } from "@/components/RelatedQuestions";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
@@ -156,6 +157,7 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
           <SensitivityPanel questionId={detail.id} />
           <RelatedQuestions questionId={detail.id} />
           <LiveControls questionId={detail.id} resolved={detail.resolved} />
+          <NotesPanel questionId={detail.id} />
         </>
       )}
 
