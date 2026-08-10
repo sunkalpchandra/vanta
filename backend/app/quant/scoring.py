@@ -1,10 +1,12 @@
-"""Forecast scoring: Brier score, directional accuracy, calibration bins.
+"""Forecast scoring: Brier score, log score, directional accuracy,
+calibration bins, and the Murphy decomposition.
 
 Operates on (probability, outcome) pairs where outcome is 0 or 1. These are
 the metrics behind the leaderboard, the stats endpoint, and the reliability
 diagram.
 """
 
+import math
 from dataclasses import dataclass
 
 
@@ -14,6 +16,18 @@ def brier_score(pairs: list[tuple[float, int]]) -> float:
     if not pairs:
         raise ValueError("brier_score requires at least one pair")
     return sum((p - o) ** 2 for p, o in pairs) / len(pairs)
+
+
+def log_score(pairs: list[tuple[float, int]], eps: float = 1e-9) -> float:
+    """Mean negative log-likelihood. Lower is better; punishes confident
+    misses much harder than Brier (a wrong 99% costs ~4.6 nats)."""
+    if not pairs:
+        raise ValueError("log_score requires at least one pair")
+    total = 0.0
+    for p, o in pairs:
+        p = min(1 - eps, max(eps, p))
+        total += -(o * math.log(p) + (1 - o) * math.log(1 - p))
+    return total / len(pairs)
 
 
 def directional_accuracy(pairs: list[tuple[float, int]]) -> float:
@@ -71,3 +85,38 @@ def calibration_bins(pairs: list[tuple[float, int]], n_bins: int = 10) -> list[C
             )
         )
     return bins
+
+
+@dataclass
+class MurphyDecomposition:
+    """Brier = reliability - resolution + uncertainty (+ within-bin variance).
+
+    reliability: how far bin-average forecasts sit from bin-observed rates
+    (lower is better). resolution: how much the forecaster separates YES from
+    NO cases (higher is better). uncertainty: the base rate's own variance —
+    the floor no forecaster controls.
+    """
+
+    reliability: float
+    resolution: float
+    uncertainty: float
+
+
+def murphy_decomposition(pairs: list[tuple[float, int]], n_bins: int = 10) -> MurphyDecomposition:
+    if not pairs:
+        raise ValueError("murphy_decomposition requires at least one pair")
+    n = len(pairs)
+    base_rate = sum(o for _, o in pairs) / n
+    reliability = 0.0
+    resolution = 0.0
+    for b in calibration_bins(pairs, n_bins=n_bins):
+        if not b.count:
+            continue
+        weight = b.count / n
+        reliability += weight * (b.mean_predicted - b.observed_rate) ** 2
+        resolution += weight * (b.observed_rate - base_rate) ** 2
+    return MurphyDecomposition(
+        reliability=round(reliability, 6),
+        resolution=round(resolution, 6),
+        uncertainty=round(base_rate * (1 - base_rate), 6),
+    )
