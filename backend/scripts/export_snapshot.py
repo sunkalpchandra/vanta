@@ -144,6 +144,14 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         }
     dump(data / "markets-sample.json", markets_sample)
 
+    # Trader leaderboard — empty on a fresh bake DB (nobody has traded there),
+    # which the UI renders as an honest "no traders yet" state.
+    traders_resp = client.get("/api/markets/traders")
+    dump(
+        data / "traders.json",
+        traders_resp.json() if traders_resp.status_code == 200 else {"traders": []},
+    )
+
     dump(
         data / "meta.json",
         {"mode": "static-demo", "questions": len(questions), "commit": os.environ.get("GIT_SHA")},

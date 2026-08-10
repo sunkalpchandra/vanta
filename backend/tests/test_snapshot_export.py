@@ -39,6 +39,7 @@ DATA_TS_SNAPSHOT_NAMES = [
     "backtest-real-7",
     "backtest-real-30",
     "markets-sample",
+    "traders",
 ]
 
 
