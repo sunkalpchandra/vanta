@@ -63,6 +63,10 @@ class TradeRequest(BaseModel):
     side: Literal["yes", "no"]
     action: Literal["buy", "sell"]
     shares: float = Field(gt=0, le=1_000_000_000)
+    # The price the UI showed the trader. If the synced price has moved beyond
+    # SLIPPAGE_TOLERANCE by execution time, the fill is rejected (409) rather
+    # than silently filled at the new price.
+    expected_price: float | None = Field(default=None, gt=0, lt=1)
 
 
 class TradeOut(BaseModel):
@@ -175,7 +179,9 @@ def place_trade(
     if event is None:
         raise HTTPException(status_code=404, detail="market not found")
     try:
-        trade = execute_trade(db, user, event, body.side, body.action, body.shares)
+        trade = execute_trade(
+            db, user, event, body.side, body.action, body.shares, expected_price=body.expected_price
+        )
     except TradeError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(exc)) from exc
