@@ -91,3 +91,18 @@ def test_notes_gated_and_404(client):
         assert resp.status_code == 401
     finally:
         app.state.require_api_key = None
+
+
+def test_brief_category_filter(client):
+    from app.routers.brief import _local_cache
+
+    _local_cache.clear()
+    scoped = client.get("/api/brief?count=5&category=technology").json()
+    assert all(i["category"] == "technology" for i in scoped)
+    # ranks stay monotonic in |edge| within the scoped brief
+    edges = [abs(i["edge"]) for i in scoped]
+    assert edges == sorted(edges, reverse=True)
+    # a scoped brief must not poison the all-category cache key
+    full = client.get("/api/brief?count=5").json()
+    assert len({i["category"] for i in full}) >= 2
+    _local_cache.clear()
