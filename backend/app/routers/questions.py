@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,9 @@ def _latest_forecast(db: Session, question_id: int) -> Forecast | None:
 def list_questions(
     category: str | None = None,
     resolved: bool | None = None,
+    q: str | None = None,
+    limit: int | None = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
     stmt = select(Question).order_by(Question.created_at.desc())
@@ -46,6 +49,12 @@ def list_questions(
         stmt = stmt.where(Question.category == category)
     if resolved is not None:
         stmt = stmt.where(Question.resolved.is_(resolved))
+    if q:
+        stmt = stmt.where(Question.question.ilike(f"%{q}%"))
+    if offset:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
     return db.scalars(stmt).all()
 
 
@@ -116,6 +125,20 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     except ResolutionError as exc:  # resolved while the pipeline ran
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
+
+
+@router.get("/{question_id}/analogs")
+def analogs(question_id: int, db: Session = Depends(get_db)):
+    """The quant agent's historical analog matches from the latest run."""
+    question = _get_question_or_404(db, question_id)
+    quant = next((r for r in question.agent_reports if r.agent == "quant"), None)
+    if quant is None:
+        return {"analogs": [], "hit_rate": None, "n_analogs": 0}
+    return {
+        "analogs": quant.details.get("analogs", []),
+        "hit_rate": quant.details.get("hit_rate"),
+        "n_analogs": quant.details.get("n_analogs", 0),
+    }
 
 
 @router.get("/{question_id}/history", response_model=list[HistoryPoint])
