@@ -53,9 +53,15 @@ export function NotesPanel({ questionId }: { questionId: number }) {
 
   async function remove(id: number) {
     setBusy(true);
+    setError(null);
     try {
-      await fetch(`${API_URL}/api/questions/${questionId}/notes/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/questions/${questionId}/notes/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
       await load();
+    } catch (err) {
+      setError(`Could not delete note (${err instanceof Error ? err.message : "error"}).`);
     } finally {
       setBusy(false);
     }
