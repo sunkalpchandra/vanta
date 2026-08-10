@@ -58,6 +58,7 @@ def test_morning_brief(client):
     assert len(brief) == 5
     assert brief[0]["rank"] == 1
     assert abs(brief[0]["edge"]) >= abs(brief[-1]["edge"])
+    assert 1.0 <= brief[0]["confidence"] <= 10.0
 
 
 def test_ask_creates_question_and_forecast(client):
