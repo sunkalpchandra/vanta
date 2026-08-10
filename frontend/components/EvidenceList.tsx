@@ -1,4 +1,5 @@
 import type { EvidenceOut } from "@/lib/types";
+import { shortDate } from "@/lib/format";
 
 export function EvidenceList({ evidence }: { evidence: EvidenceOut[] }) {
   if (!evidence.length) {
@@ -24,7 +25,7 @@ export function EvidenceList({ evidence }: { evidence: EvidenceOut[] }) {
           <div className="min-w-0">
             <p className="text-sm text-ink-2">{e.summary}</p>
             <p className="micro-label mt-1">
-              {e.source} · impact {e.impact.toFixed(1)}
+              {e.source} · impact {e.impact.toFixed(1)} · {shortDate(e.created_at)}
             </p>
           </div>
         </li>
