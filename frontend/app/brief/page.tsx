@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CopyBriefButton } from "@/components/CopyBriefButton";
 import { TodayDate } from "@/components/TodayDate";
+import { briefRssHref } from "@/lib/api";
 import { getBrief } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
 
@@ -18,7 +19,15 @@ export default async function BriefPage() {
               : "The things the world is most wrong about today."}
           </p>
         </div>
-        <CopyBriefButton brief={brief} />
+        <div className="flex items-center gap-2">
+          <CopyBriefButton brief={brief} />
+          <a
+            href={briefRssHref()}
+            className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-ink-2 transition-colors hover:border-accent hover:text-ink"
+          >
+            RSS
+          </a>
+        </div>
       </div>
       {brief.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">
