@@ -16,7 +16,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     # Operator credential ("vk_..."), shown once at creation. Gating is off by
-    # default (demo); VANTA_REQUIRE_API_KEY=1 enforces it on mutations.
+    # default (demo); REQUIRE_API_KEY=1 enforces it on mutations.
     api_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
