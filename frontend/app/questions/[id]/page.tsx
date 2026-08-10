@@ -8,6 +8,7 @@ import { EvidenceList } from "@/components/EvidenceList";
 import { LiveControls } from "@/components/LiveControls";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
+import { QuestionKeyboardNav } from "@/components/QuestionKeyboardNav";
 import { RelatedQuestions } from "@/components/RelatedQuestions";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { WhatChanged } from "@/components/WhatChanged";
@@ -44,12 +45,18 @@ export async function generateStaticParams() {
 
 export default async function QuestionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [detail, history, marketHistory] = await Promise.all([
+  const [detail, history, marketHistory, siblings] = await Promise.all([
     getQuestion(id),
     getHistory(id),
     getMarketHistory(id),
+    getQuestions(),
   ]);
   if (!detail) notFound();
+  // "[" / "]" page through the corpus in list order (newest first).
+  const ids = siblings.map((q) => q.id);
+  const at = ids.indexOf(detail.id);
+  const prevId = at > 0 ? ids[at - 1] : undefined;
+  const nextId = at >= 0 && at < ids.length - 1 ? ids[at + 1] : undefined;
   const forecast = detail.latest_forecast;
   const edge = forecast ? forecast.probability - detail.market_probability : 0;
 
@@ -94,6 +101,9 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
           <span className="micro-label">
             · ${Math.round(detail.market_volume_usd).toLocaleString("en-US")} market volume ·{" "}
             {detail.market_liquidity} liquidity
+          </span>
+          <span className="ml-auto">
+            <QuestionKeyboardNav prevId={prevId} nextId={nextId} />
           </span>
         </div>
         <h1 className="mt-3 max-w-3xl text-2xl font-bold leading-snug tracking-tight">
