@@ -144,6 +144,38 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     return _detail(db, question)
 
 
+@router.get("/{question_id}/changes")
+def changes(question_id: int, db: Session = Depends(get_db)):
+    """What changed between the latest two forecast runs: the probability
+    move and any evidence that arrived in between."""
+    _get_question_or_404(db, question_id)
+    latest_two = db.scalars(
+        select(Forecast)
+        .where(Forecast.question_id == question_id)
+        .order_by(Forecast.timestamp.desc(), Forecast.id.desc())
+        .limit(2)
+    ).all()
+    if len(latest_two) < 2:
+        return {"delta": None, "from": None, "to": None, "new_evidence": []}
+    current, previous = latest_two
+    new_evidence = db.scalars(
+        select(Evidence).where(
+            Evidence.question_id == question_id,
+            Evidence.created_at > previous.timestamp,
+            Evidence.created_at <= current.timestamp,
+        )
+    ).all()
+    return {
+        "from": previous.probability,
+        "to": current.probability,
+        "delta": round(current.probability - previous.probability, 4),
+        "new_evidence": [
+            {"source": e.source, "summary": e.summary, "sentiment": e.sentiment, "impact": e.impact}
+            for e in new_evidence
+        ],
+    }
+
+
 @router.get("/{question_id}/related", response_model=list[RelatedQuestion])
 def related(question_id: int, limit: int = Query(4, ge=1, le=10), db: Session = Depends(get_db)):
     """Topically similar questions by token overlap (category counts a little)."""
