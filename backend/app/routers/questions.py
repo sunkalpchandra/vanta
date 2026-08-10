@@ -18,6 +18,7 @@ from ..schemas import (
 from ..service import (
     ResolutionError,
     create_question,
+    evidence_sensitivity,
     record_market_price,
     resolve_question,
     run_and_store_forecast,
@@ -133,6 +134,14 @@ def add_evidence(question_id: int, body: EvidenceIn, db: Session = Depends(get_d
     except ResolutionError as exc:  # resolved while the pipeline ran
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _detail(db, question)
+
+
+@router.get("/{question_id}/sensitivity")
+def sensitivity(question_id: int, db: Session = Depends(get_db)):
+    """Leave-one-out evidence importance — which signals actually move this
+    forecast, and by how much."""
+    question = _get_question_or_404(db, question_id)
+    return {"items": evidence_sensitivity(db, question)}
 
 
 @router.post("/{question_id}/market", response_model=QuestionDetail)
