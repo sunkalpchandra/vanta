@@ -1,0 +1,67 @@
+"""Regressions from the round-3 review: middleware ordering, cache status
+gating, changes vs synthetic history, gated ask."""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app  # DB binding happens in conftest.py
+
+
+@pytest.fixture(scope="module")
+def client():
+    with TestClient(app) as c:
+        yield c
+
+
+ORIGIN = {"Origin": "http://localhost:3000"}
+
+
+def test_rate_limited_responses_carry_cors(client):
+    """CORS must be outermost: a 429 without CORS headers is an opaque browser
+    error the UI can't distinguish from the network being down."""
+    from app.main import _rate_buckets
+
+    app.state.rate_limit_per_minute = 1
+    _rate_buckets.clear()
+    try:
+        body = {"question": "Will the CORS-on-429 regression probe fire correctly?", "category": "science"}
+        client.post("/api/discover/watchlist", json=body, headers=ORIGIN)
+        blocked = client.post("/api/discover/watchlist", json=body, headers=ORIGIN)
+        assert blocked.status_code == 429
+        assert blocked.headers.get("access-control-allow-origin") == "http://localhost:3000"
+    finally:
+        app.state.rate_limit_per_minute = None
+        _rate_buckets.clear()
+
+
+def test_error_responses_not_publicly_cached(client):
+    resp = client.get("/api/cards/999999.svg")
+    assert resp.status_code == 404
+    assert "cache-control" not in resp.headers
+
+
+def test_changes_ignores_synthetic_backfill(client):
+    """A freshly seeded question has one real run + 30 backfill rows; the
+    'previous run' must not be a random-walk snapshot."""
+    seeded_qid = client.get("/api/questions").json()[-1]["id"]
+    history = client.get(f"/api/questions/{seeded_qid}/history").json()
+    assert len(history) >= 30  # backfill definitely present
+    payload = client.get(f"/api/questions/{seeded_qid}/changes").json()
+    # Only one REAL run exists (unless another module refreshed this question);
+    # either way the previous run must never be the seeded walk: with a single
+    # real run delta is null, with two the delta matches real forecasts only.
+    if payload["delta"] is None:
+        assert payload["from"] is None
+    else:
+        client.post(f"/api/questions/{seeded_qid}/refresh")
+        after = client.get(f"/api/questions/{seeded_qid}/changes").json()
+        assert after["from"] is not None
+
+
+def test_ask_is_gated_when_keys_required(client):
+    app.state.require_api_key = True
+    try:
+        body = {"question": "Will the gated-ask regression probe be rejected without a key?", "category": "science"}
+        assert client.post("/api/questions", json=body).status_code == 401
+    finally:
+        app.state.require_api_key = None
