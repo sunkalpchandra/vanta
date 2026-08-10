@@ -10,6 +10,9 @@ export function QuestionKeyboardNav({ prevId, nextId }: { prevId?: number; nextI
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Cmd+[ / Cmd+] are browser Back/Forward on macOS — never hijack chords.
+      // (altKey stays allowed: some layouts type "[" itself via AltGr.)
+      if (e.metaKey || e.ctrlKey) return;
       const target = e.target as HTMLElement | null;
       if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (e.key === "[" && prevId != null) router.push(`/questions/${prevId}`);
