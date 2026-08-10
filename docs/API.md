@@ -51,6 +51,38 @@ Base URL: `http://localhost:8000` (interactive docs at `/docs`). All responses a
 | `GET /api/feed?sort=edge\|confidence\|volume` | Feed re-ranking. |
 | `GET /api/leaderboard/calibration?category=` | Reliability bins scoped to one category. |
 
+## Users & operator gating
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/users` | Register an operator; the `vk_...` key is returned once. 409 on duplicate email. |
+| `GET /api/users/me` | Identity for a presented `X-API-Key`. |
+
+Mutations (`refresh`, `resolve`, `evidence`, `market`, discovery, watchlist writes) are open by
+default; set `REQUIRE_API_KEY=1` to demand a key. All mutations are also rate-limited
+(`RATE_LIMIT_PER_MINUTE`, default 240/client/min, 429 + Retry-After).
+
+## Market
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/questions/{id}/market` | Ingest a new market price (mirrors onto the question; 409 once resolved). |
+| `GET /api/questions/{id}/market-history` | The market's own probability series. |
+
+## Explanation surfaces
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/questions/{id}/sensitivity` | Leave-one-out evidence importance over the real pipeline. |
+| `GET /api/questions/{id}/related` | Token-overlap neighbors. |
+| `GET /api/questions/{id}/changes` | Probability move between the latest two runs + evidence that arrived between them. |
+| `GET /api/alerts` | Derived attention state: biggest moves and edges, one per question. |
+| `GET /api/feed/sparklines` | Every live probability series in one payload. |
+| `GET /api/feed/rss` | The feed as RSS. |
+| `GET /api/search?q=` | Unified search across live questions and the archive corpus. |
+| `GET /api/agents/{name}/records` · `/calibration` | One agent's frozen calls and its reliability bins. |
+| `GET /metrics` | Per-route request counters (Prometheus text). |
+
 ## Meta
 
 | Endpoint | Description |
