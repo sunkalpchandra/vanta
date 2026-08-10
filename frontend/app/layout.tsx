@@ -32,6 +32,7 @@ const NAV = [
   { href: "/archive", label: "Archive" },
   { href: "/methodology", label: "Method" },
   { href: "/ask", label: "Ask" },
+  { href: "/chat", label: "Chat" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
