@@ -41,20 +41,24 @@ def traders(limit: int = Query(20, ge=1, le=100), db: Session = Depends(get_db))
 def trader_profile(name: str, db: Session = Depends(get_db)):
     """One trader's public book, addressed by email local-part. 404 when no
     registered trader owns that handle."""
-    # The handle is email.split("@")[0]. A LIKE prefilter is always a SUPERSET
-    # of the exact matches (LIKE wildcards only broaden the match), so the
-    # user's own row is guaranteed present and the Python split-equality below
-    # makes the resolution exact. Ordering by id makes handle collisions (two
-    # emails can share a local-part) resolve to the first-registered trader.
+    # Exact prefix match with LIKE wildcards ESCAPED — an unescaped name like
+    # "%" would otherwise force a full users-table scan (and match everyone).
+    escaped = name.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     candidates = db.scalars(
-        select(User).where(User.email.like(f"{name}@%")).order_by(User.id)
+        select(User).where(User.email.like(f"{escaped}@%", escape="\\")).order_by(User.id)
     ).all()
     user = next((u for u in candidates if _handle(u.email) == name), None)
     if user is None:
         raise HTTPException(status_code=404, detail="trader not found")
 
-    book = portfolio(db, user)
     n_trades = db.scalar(select(func.count(Trade.id)).where(Trade.user_id == user.id)) or 0
+    # Only traders who have actually traded have a public profile — otherwise
+    # the endpoint would let anyone enumerate registered handles and read their
+    # starting balances by guessing email local-parts.
+    if not n_trades:
+        raise HTTPException(status_code=404, detail="trader not found")
+
+    book = portfolio(db, user)
     recent = db.execute(
         select(Trade, MarketEvent.question)
         .join(MarketEvent, Trade.event_id == MarketEvent.id)
