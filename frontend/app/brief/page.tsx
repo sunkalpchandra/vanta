@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CopyBriefButton } from "@/components/CopyBriefButton";
 import { TodayDate } from "@/components/TodayDate";
 import { getBrief } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
@@ -7,14 +8,17 @@ export default async function BriefPage() {
   const brief = await getBrief();
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-8">
-        <TodayDate />
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">vanta Morning Brief</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          {brief.length > 0
-            ? `${brief.length} things the world is most wrong about today.`
-            : "The things the world is most wrong about today."}
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <TodayDate />
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">vanta Morning Brief</h1>
+          <p className="mt-1 text-sm text-ink-2">
+            {brief.length > 0
+              ? `${brief.length} things the world is most wrong about today.`
+              : "The things the world is most wrong about today."}
+          </p>
+        </div>
+        <CopyBriefButton brief={brief} />
       </div>
       {brief.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">
