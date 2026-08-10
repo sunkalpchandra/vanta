@@ -23,7 +23,23 @@ adheres to [Semantic Versioning](https://semver.org/).
   from a curated watchlist, deduplicated by token overlap against existing
   questions, each forecast by the full pipeline.
 - Static snapshot exporter (`backend/scripts/export_snapshot.py`) and a
-  static demo mode for GitHub Pages.
+  static demo mode for GitHub Pages, deployed at
+  https://sunkalpchandra.github.io/vanta/ on every push to `main`.
+- Archive page and `GET /api/leaderboard/predictions`: the full resolved track
+  record with closer-call markers.
+- Discovery panel on the ask page (live mode), confidence on brief items,
+  RESOLVED stamps on settled share cards, `resolved=` question filter.
+- Methodology page, calibration chart, stats bar, category filter chips,
+  mobile-safe navigation, 404/error/loading states, OpenGraph metadata.
+
+### Fixed
+
+- Concurrent `POST /resolve` could double-settle a question (guarded UPDATE +
+  unique index); a resolve landing mid-pipeline no longer corrupts the frozen
+  record; the morning-brief cache is invalidated on resolution.
+- Calibration bins assigned by index — float bin edges dropped exact round
+  quotes (0.30, 0.70) into the bin below.
+- Backend test suite is order-independent (suite DB bound in conftest.py).
 
 ### Planned
 
