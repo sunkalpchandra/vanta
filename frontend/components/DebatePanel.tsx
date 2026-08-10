@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { AgentReportOut } from "@/lib/types";
 import { pct } from "@/lib/format";
 import { StanceChip } from "./Badges";
@@ -16,6 +16,7 @@ const AGENT_META: Record<string, { title: string; blurb: string }> = {
 };
 
 export function DebatePanel({ reports }: { reports: AgentReportOut[] }) {
+  const reduceMotion = useReducedMotion();
   return (
     <div className="space-y-3">
       {reports.map((report, i) => {
@@ -24,7 +25,7 @@ export function DebatePanel({ reports }: { reports: AgentReportOut[] }) {
         return (
           <motion.div
             key={report.agent}
-            initial={{ opacity: 0, y: 10 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
