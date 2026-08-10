@@ -42,6 +42,7 @@ export default async function BriefPage() {
                     <span className={`font-bold ${item.edge >= 0 ? "text-pos" : "text-neg"}`}>
                       {signedPct(item.edge)}
                     </span>
+                    <span className="micro-label">conf {item.confidence.toFixed(1)}/10</span>
                   </div>
                 </div>
               </Link>
