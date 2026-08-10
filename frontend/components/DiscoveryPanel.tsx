@@ -27,8 +27,10 @@ export function DiscoveryPanel() {
       .catch(() => setCandidates([]));
   }, []);
 
+  // Static demo: no live backend. Loading: don't flash. Zero candidates is
+  // NOT a reason to vanish — the watch-a-signal form below is the only way
+  // to create new ones.
   if (IS_STATIC || candidates === null) return null;
-  if (candidates.length === 0) return null;
 
   async function runDiscovery() {
     setRunning(true);
@@ -50,17 +52,20 @@ export function DiscoveryPanel() {
         <div>
           <div className="micro-label">autonomous research mode</div>
           <p className="mt-1 text-sm text-ink-2">
-            {candidates.length} watchlist signal{candidates.length === 1 ? "" : "s"} not yet covered
-            by the question base.
+            {candidates.length > 0
+              ? `${candidates.length} watchlist signal${candidates.length === 1 ? "" : "s"} not yet covered by the question base.`
+              : "Every watchlist signal is covered — point the agents at a new one below."}
           </p>
         </div>
-        <button
-          onClick={runDiscovery}
-          disabled={running}
-          className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
-        >
-          {running ? "Minting…" : "Run discovery"}
-        </button>
+        {candidates.length > 0 && (
+          <button
+            onClick={runDiscovery}
+            disabled={running}
+            className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+          >
+            {running ? "Minting…" : "Run discovery"}
+          </button>
+        )}
       </div>
       <ul className="mt-4 space-y-2">
         {candidates.slice(0, 3).map((c) => (
