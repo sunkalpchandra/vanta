@@ -13,18 +13,13 @@ const EMPTY: MarketsOut = { total: 0, items: [] };
 // static demo works either way. Live mode never needs the sample: the
 // browser pages through /api/markets itself.
 async function loadSample(): Promise<MarketsOut> {
-  const getter = (data as unknown as { getMarketsSample?: () => Promise<MarketsOut | null> })
-    .getMarketsSample;
-  if (getter) return (await getter()) ?? EMPTY;
-  if (!IS_STATIC) return EMPTY;
-  try {
-    const { promises: fs } = await import("fs");
-    const { join } = await import("path");
-    const file = join(process.cwd(), "public", "data", "markets-sample.json");
-    return JSON.parse(await fs.readFile(file, "utf8")) as MarketsOut;
-  } catch {
-    return EMPTY;
-  }
+  // getMarketsSample returns the baked {active, settled, ...} shape; the
+  // browser filters a flat items list by outcome, so merge the two tabs.
+  if (!IS_STATIC) return EMPTY; // live mode pages through /api/markets itself
+  const sample = await data.getMarketsSample();
+  if (!sample) return EMPTY;
+  const items = [...(sample.active ?? []), ...(sample.settled ?? [])];
+  return { total: sample.total_active ?? items.length, items };
 }
 
 export default async function MarketsIndexPage() {
