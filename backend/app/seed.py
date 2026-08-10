@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .data import REFERENCE_EVENTS, SEED_QUESTIONS
-from .models import Forecast, Prediction, Question, utcnow
+from .models import Forecast, MarketSnapshot, Prediction, Question, utcnow
 from .quant.bayes import clamp, inv_logit, logit
 from .service import ResolutionError, create_question, resolve_question, run_and_store_forecast
 
@@ -68,6 +68,9 @@ def _seed_questions(db: Session) -> bool:
                 evidence=spec["evidence"],
             )
         elif _has_forecast(db, question):
+            if not _has_market_history(db, question):
+                _backfill_market_history(db, question)  # upgraded/interrupted DBs
+                changed = True
             continue  # fully seeded on an earlier boot
         else:
             # Crash landed between the question commit and the forecast
@@ -75,12 +78,20 @@ def _seed_questions(db: Session) -> bool:
             changed = True
         forecast, _ = run_and_store_forecast(db, question)
         _backfill_history(db, question, forecast)
+        _backfill_market_history(db, question)
     db.commit()
     return changed
 
 
 def _has_forecast(db: Session, question: Question) -> bool:
     return db.scalar(select(Forecast).where(Forecast.question_id == question.id).limit(1)) is not None
+
+
+def _has_market_history(db: Session, question: Question) -> bool:
+    return (
+        db.scalar(select(MarketSnapshot).where(MarketSnapshot.question_id == question.id).limit(1))
+        is not None
+    )
 
 
 def _backfill_history(db: Session, question: Question, forecast: Forecast, days: int = 30) -> None:
@@ -104,6 +115,31 @@ def _backfill_history(db: Session, question: Question, forecast: Forecast, days:
                 timestamp=now - timedelta(days=days - i),
             )
         )
+
+
+def _backfill_market_history(db: Session, question: Question, days: int = 30) -> None:
+    """Reverse random walk ending at the question's current market price —
+    the market side of the market-vs-vanta chart. Different RNG stream than
+    the forecast walk so the two series genuinely diverge."""
+    if _has_market_history(db, question):
+        return  # idempotent across interrupted boots
+    rng = random.Random(question.id * 104729 + 7)
+    z = logit(question.market_probability)
+    points: list[float] = []
+    for _ in range(days):
+        z -= rng.gauss(0, 0.10)
+        points.append(inv_logit(z))
+    points.reverse()
+    now = utcnow()
+    for i, p in enumerate(points):
+        db.add(
+            MarketSnapshot(
+                question_id=question.id,
+                probability=round(clamp(p, 0.02, 0.98), 4),
+                timestamp=now - timedelta(days=days - i),
+            )
+        )
+    db.add(MarketSnapshot(question_id=question.id, probability=question.market_probability, timestamp=now))
 
 
 def _seed_resolved_predictions(db: Session) -> None:
