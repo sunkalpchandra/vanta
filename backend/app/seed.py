@@ -14,7 +14,15 @@ from sqlalchemy.orm import Session
 from .data import REFERENCE_EVENTS, SEED_QUESTIONS
 from .models import Forecast, Prediction, Question, utcnow
 from .quant.bayes import clamp, inv_logit, logit
-from .service import create_question, run_and_store_forecast
+from .service import ResolutionError, create_question, resolve_question, run_and_store_forecast
+
+# Two seeded questions resolve at seed time so the archive, the resolved
+# filters, and the agent leaderboard have live-path content in the demo.
+# Outcomes are fixtures, chosen to match the corpus's own base rates.
+DEMO_RESOLUTIONS: list[tuple[str, bool]] = [
+    ("Will the favorite win the NBA championship this season?", False),
+    ("Will SpaceX land Starship's upper stage back at the launch site this year?", True),
+]
 
 
 def seed_if_empty(db: Session) -> bool:
@@ -25,6 +33,21 @@ def seed_if_empty(db: Session) -> bool:
     if db.scalar(select(Prediction).limit(1)) is None:
         _seed_resolved_predictions(db)
         changed = True
+    changed = _seed_demo_resolutions(db) or changed
+    return changed
+
+
+def _seed_demo_resolutions(db: Session) -> bool:
+    changed = False
+    for text, outcome in DEMO_RESOLUTIONS:
+        question = db.scalar(select(Question).where(Question.question == text))
+        if question is None or question.resolved:
+            continue
+        try:
+            resolve_question(db, question, outcome)
+            changed = True
+        except ResolutionError:  # e.g. no forecast yet — leave it live
+            continue
     return changed
 
 
