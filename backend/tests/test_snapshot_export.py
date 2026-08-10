@@ -38,6 +38,7 @@ DATA_TS_SNAPSHOT_NAMES = [
     "meta",
     "backtest-real-7",
     "backtest-real-30",
+    "markets-sample",
 ]
 
 
@@ -81,6 +82,17 @@ def test_snapshot_feed_is_nonempty_and_consistent(snapshot_dir):
     question_ids = {q["id"] for q in json.loads((snapshot_dir / "data" / "questions.json").read_text())}
     assert feed
     assert all(card["question_id"] in question_ids for card in feed)
+
+
+def test_snapshot_markets_sample_shape(snapshot_dir):
+    sample = json.loads((snapshot_dir / "data" / "markets-sample.json").read_text())
+    assert sample["sampled"] is True
+    assert isinstance(sample["active"], list)
+    assert isinstance(sample["settled"], list)
+    # An empty bake (no synced venue events, or router not mounted yet) must
+    # carry the honest sentinel note instead of pretending markets exist.
+    if not sample["active"] and not sample["settled"]:
+        assert sample["note"] == "no synced market events in the bake database"
 
 
 def test_snapshot_meta_carries_commit_stamp(tmp_path, monkeypatch):

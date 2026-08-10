@@ -110,6 +110,40 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         )
         dump(data / f"backtest-real-{horizon}.json", payload)
 
+    # Markets sample for the play-money trading surface. The fresh bake DB has
+    # no synced venue events (and the markets router may not be mounted at all),
+    # so a 404 or an empty answer bakes an honest sentinel — never a crash and
+    # never a fabricated market list.
+    def fetch_markets(endpoint: str) -> tuple[list, int] | None:
+        response = client.get(endpoint)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()  # non-404 errors still fail the bake
+        payload = response.json()
+        if isinstance(payload, list):
+            return payload, len(payload)
+        items = payload.get("items", [])
+        return items, int(payload.get("total", len(items)))
+
+    active_items, total_active = fetch_markets("/api/markets?status=active&sort=volume&limit=100") or ([], 0)
+    settled_items, total_settled = fetch_markets("/api/markets?status=settled&limit=100") or ([], 0)
+    if not active_items and not settled_items:
+        markets_sample = {
+            "active": [],
+            "settled": [],
+            "sampled": True,
+            "note": "no synced market events in the bake database",
+        }
+    else:
+        markets_sample = {
+            "active": active_items,
+            "settled": settled_items,
+            "total_active": total_active,
+            "total_settled": total_settled,
+            "sampled": True,
+        }
+    dump(data / "markets-sample.json", markets_sample)
+
     dump(
         data / "meta.json",
         {"mode": "static-demo", "questions": len(questions), "commit": os.environ.get("GIT_SHA")},
@@ -122,9 +156,14 @@ def main() -> int:
     parser.add_argument("--out", required=True, help="output directory (frontend/public)")
     args = parser.parse_args()
 
-    # Fresh throwaway DB so every snapshot is a clean deterministic seed.
-    tmpdir = tempfile.mkdtemp(prefix="vanta-snapshot-")
-    os.environ["DATABASE_URL"] = f"sqlite:///{tmpdir}/snapshot.db"
+    # Existing-DB passthrough: the Pages workflow's scheduled bake seeds and
+    # syncs a workspace DB first, then exports against it by pre-setting
+    # DATABASE_URL (that's how markets-sample.json gets real synced events).
+    # Without one, fall back to a fresh throwaway DB so a local snapshot is
+    # always a clean deterministic seed.
+    if not os.environ.get("DATABASE_URL"):
+        tmpdir = tempfile.mkdtemp(prefix="vanta-snapshot-")
+        os.environ["DATABASE_URL"] = f"sqlite:///{tmpdir}/snapshot.db"
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from fastapi.testclient import TestClient
