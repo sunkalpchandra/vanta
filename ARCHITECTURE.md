@@ -152,6 +152,32 @@ non-zero, so category membership alone can never clear the `min_similarity=0.2`
 gate and the quant agent retains the ability to abstain. The top 20 matches
 produce a similarity-weighted hit rate: closer analogs count for more.
 
+### Scoring and self-measurement
+
+`quant/scoring.py` scores resolved forecasts: Brier, log score, directional
+accuracy, index-assigned calibration bins, and the Murphy decomposition
+(reliability − resolution + uncertainty). `quant/backtest.py` runs a
+leave-one-out replay of the analog engine over the reference corpus and always
+reports the always-predict-the-base-rate benchmark beside its own numbers
+(`GET /api/quant/backtest`, surfaced on the methodology page).
+
+### The learned base rate
+
+Agents never touch the database, so `service.learned_base_rate` computes a
+blended category prior — the static rate in `historian.CATEGORY_BASE_RATES`
+acting as ~20 phantom resolutions, with the observed resolved record taking
+over as real outcomes accumulate — and passes it into `QuestionContext.
+base_rate`. The historian and synthesis shrinkage both prefer it; the static
+table remains the cold-start fallback.
+
+### The internal forecaster competition
+
+`resolve_question` freezes every estimating agent's final probability into
+`agent_track_records` at settlement. `GET /api/agents/leaderboard` scores each
+agent (Brier, log score, accuracy) against outcomes — the check on whether the
+synthesis pool actually beats its own inputs. The skeptic never estimates and
+is deliberately absent.
+
 ## Deterministic math vs. optional LLM — `backend/app/llm.py`
 
 The boundary is one function: `narrate(system, prompt, fallback)`. Exactly
