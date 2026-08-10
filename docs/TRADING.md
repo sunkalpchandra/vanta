@@ -125,3 +125,12 @@ Paper trading against real venue prices is a calibration exercise: it forces
 point beliefs into positions, marks them against the world's aggregated
 belief, and settles them against reality. It is not, and will never become,
 a way to stake real money on anything.
+
+
+## Trader leaderboard
+
+`GET /api/markets/traders` ranks every trader by lifetime P&L against the
+ⓥ10,000 starting balance (equity marked to current synced prices; zero-trade
+accounts excluded). It surfaces on the Portfolio page. In the static demo it
+reflects whoever traded in the bake database — usually empty, honestly
+labeled.
