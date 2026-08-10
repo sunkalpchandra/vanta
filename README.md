@@ -46,12 +46,16 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 
 ## Features
 
-- **Intelligence Feed** — discovery cards ranked by |edge|, flagging what the market may be mispricing
-- **AI Debate Mode** — every forecast shows all seven agents' arguments, including the skeptic's attack
-- **Morning Brief** — "5 things the world is wrong about", cached (Redis or in-process)
-- **Accuracy Leaderboard** — vanta vs market directional accuracy and Brier scores by category
+- **Intelligence Feed** — discovery cards ranked by |edge|, with 30-day sparklines, category filters, search, and a biggest-moves strip
+- **AI Debate Mode** — every forecast shows all seven agents' arguments, the skeptic's attack, and the quant agent's historical analogs
+- **Morning Brief** — "5 things the world is wrong about" with category diversity, copy-as-text, and RSS
+- **Accuracy Leaderboard** — directional accuracy, Brier and log scores, Murphy decomposition, and a reliability diagram, vanta vs market
+- **Agent Leaderboard** — the internal forecaster competition: each agent's frozen calls scored at resolution
+- **Resolution lifecycle** — settle questions against reality; the track record, archive, and learned category base rates grow from real outcomes
+- **Autonomous research** — a deduplicated watchlist (built-in + user-added) the pipeline mints new questions from
+- **Self-measurement** — a leave-one-out backtest of the analog engine, published with its no-skill benchmark
 - **Ask vanta** — pose any yes/no future event; the full pipeline deliberates on demand
-- **Shareable cards** — self-contained SVG prediction cards at `/api/cards/{id}.svg`
+- **Shareable cards** — self-contained SVG prediction cards, stamped once resolved
 
 ## Quick start (no keys, no Docker)
 
