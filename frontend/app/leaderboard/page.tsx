@@ -1,10 +1,14 @@
 import { AccuracyChart } from "@/components/AccuracyChart";
-import { getLeaderboard } from "@/lib/api";
-
-export const dynamic = "force-dynamic";
+import { CalibrationChart } from "@/components/CalibrationChart";
+import { StatsBar } from "@/components/StatsBar";
+import { getCalibration, getLeaderboard, getStats } from "@/lib/data";
 
 export default async function LeaderboardPage() {
-  const rows = await getLeaderboard();
+  const [rows, stats, calibration] = await Promise.all([
+    getLeaderboard(),
+    getStats(),
+    getCalibration(),
+  ]);
   return (
     <div>
       <div className="mb-8">
@@ -14,13 +18,20 @@ export default async function LeaderboardPage() {
           Lower Brier is better calibration.
         </p>
       </div>
+      {stats && <div className="mb-4">{<StatsBar stats={stats} />}</div>}
       {rows.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">No resolved predictions yet.</div>
       ) : (
         <>
-          <div className="card p-5">
-            <div className="micro-label mb-3">Directional accuracy by category</div>
-            <AccuracyChart rows={rows} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="card p-5">
+              <div className="micro-label mb-3">Directional accuracy by category</div>
+              <AccuracyChart rows={rows} />
+            </div>
+            <div className="card p-5">
+              <div className="micro-label mb-3">Calibration — observed vs predicted</div>
+              <CalibrationChart bins={calibration} />
+            </div>
           </div>
           <div className="card mt-4 overflow-x-auto">
             <table className="w-full min-w-[540px] text-sm">
