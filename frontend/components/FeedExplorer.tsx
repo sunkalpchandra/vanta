@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeedCard } from "@/lib/types";
 import { FeedCardItem } from "./FeedCardItem";
 
@@ -14,6 +14,21 @@ export function FeedExplorer({
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"edge" | "confidence">("edge");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" focuses search from anywhere on the page (unless already typing).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const typing = target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(cards.map((c) => c.category))).sort()],
     [cards],
@@ -56,10 +71,11 @@ export function FeedExplorer({
             <option value="confidence">by confidence</option>
           </select>
           <input
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions…"
+            placeholder="Search…  ( / )"
             aria-label="Search questions"
             className="w-full rounded-full border border-line bg-surface-2 px-4 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus:border-accent sm:w-52"
           />
