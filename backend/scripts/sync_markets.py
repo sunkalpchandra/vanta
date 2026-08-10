@@ -153,6 +153,10 @@ def run_pass(session, args) -> dict:
     from app.ingest.active import deactivate_stale
 
     counts = pull_active(session, args.polymarket_pages, args.kalshi_pages)
+    from app.pricehistory import record_ticks_for_active
+
+    counts["ticks"] = record_ticks_for_active(session)
+    session.commit()
     counts["deactivated"] = deactivate_stale(session, "polymarket", args.stale_hours) + deactivate_stale(
         session, "kalshi", args.stale_hours
     )
@@ -161,7 +165,7 @@ def run_pass(session, args) -> dict:
     session.commit()
     print(
         f"sync: added={counts['added']} updated={counts['updated']} closed={counts['closed']} "
-        f"deactivated={counts['deactivated']} settled={counts['settled']}",
+        f"ticks={counts['ticks']} deactivated={counts['deactivated']} settled={counts['settled']}",
         flush=True,
     )
     return counts
