@@ -73,4 +73,7 @@ test("portfolio shows the static-mode honest state", async ({ page }) => {
   await page.goto("portfolio/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/portfolio/i);
   await expect(page.getByText(/static demo|start trading/i).first()).toBeVisible();
+  // The trader leaderboard renders (a real trader from the bake DB, or the
+  // honest empty state).
+  await expect(page.getByText(/trader leaderboard/i)).toBeVisible();
 });
