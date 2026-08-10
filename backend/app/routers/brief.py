@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db import get_db
-from ..schemas import BriefItem
+from ..schemas import BriefItem, Category
 from .feed import latest_forecasts
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -74,7 +74,7 @@ def _cache_set(key: str, value: str) -> None:
 @router.get("", response_model=list[BriefItem])
 def morning_brief(
     count: int = Query(5, ge=1, le=MAX_COUNT),
-    category: str | None = Query(None, max_length=50),
+    category: Category | None = Query(None),
     db: Session = Depends(get_db),
 ):
     cache_key = f"vanta:brief:{count}:{category or 'all'}"
@@ -135,9 +135,15 @@ def morning_brief(
 
 
 @router.get("/rss")
-def morning_brief_rss(count: int = Query(5, ge=1, le=MAX_COUNT), db: Session = Depends(get_db)):
+def morning_brief_rss(
+    count: int = Query(5, ge=1, le=MAX_COUNT),
+    category: Category | None = Query(None),
+    db: Session = Depends(get_db),
+):
     """The brief as RSS — subscribe to what the world is wrong about."""
-    items = morning_brief(count=count, db=db)
+    # Direct call: every default must be passed explicitly, or FastAPI Query
+    # sentinels leak in as truthy values (this emptied the whole feed once).
+    items = morning_brief(count=count, category=category, db=db)
     entries = "".join(
         f"""
   <item>
