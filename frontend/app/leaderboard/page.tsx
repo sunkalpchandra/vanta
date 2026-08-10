@@ -4,6 +4,8 @@ import { CalibrationChart } from "@/components/CalibrationChart";
 import { StatsBar } from "@/components/StatsBar";
 import { getCalibration, getLeaderboard, getStats } from "@/lib/data";
 
+export const metadata = { title: "accuracy — vanta" };
+
 export default async function LeaderboardPage() {
   const [rows, stats, calibration] = await Promise.all([
     getLeaderboard(),
