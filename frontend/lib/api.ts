@@ -7,3 +7,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000
 /** Where the share-card SVG for a question lives in the current mode. */
 export const shareCardHref = (questionId: number) =>
   IS_STATIC ? `${BASE_PATH}/cards/${questionId}.svg` : `${API_URL}/api/cards/${questionId}.svg`;
+
+/** The morning-brief RSS feed in the current mode. */
+export const briefRssHref = () =>
+  IS_STATIC ? `${BASE_PATH}/brief.xml` : `${API_URL}/api/brief/rss`;
