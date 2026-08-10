@@ -16,11 +16,14 @@ test("leaderboard table has category rows with accuracy", async ({ page }) => {
   expect(await rows.count()).toBeGreaterThanOrEqual(3);
 });
 
-test("agents page ranks the seven agents", async ({ page }) => {
+test("agents page ranks the scored agents", async ({ page }) => {
   await page.goto("agents/");
-  for (const agent of ["quant", "skeptic", "synthesis"]) {
-    await expect(page.getByText(new RegExp(agent, "i")).first()).toBeVisible();
-  }
+  // Structural assertion: actual leaderboard rows link to receipts pages
+  // (page prose also names agents, which would false-pass a text match).
+  const rows = page.locator('a[href*="/agents/"]');
+  expect(await rows.count()).toBeGreaterThanOrEqual(6);
+  await expect(page.locator('a[href$="/agents/synthesis/"], a[href$="/agents/synthesis"]').first()).toBeVisible();
+  await expect(page.locator('a[href$="/agents/quant/"], a[href$="/agents/quant"]').first()).toBeVisible();
 });
 
 test("methodology labels the demo corpus honestly", async ({ page }) => {
