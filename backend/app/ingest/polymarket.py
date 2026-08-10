@@ -220,7 +220,10 @@ def normalize(market: dict) -> dict | None:
     strictly yes/no events."""
     source_id = str(market.get("id") or "").strip()
     question = str(market.get("question") or "").strip()
-    close_time = _parse_end_date(market.get("endDate"))
+    # Anchor to the ACTUAL close when gamma provides it: markets that
+    # resolve early ("...by Dec 31" settling in June) would otherwise get
+    # their T-h snapshot taken AFTER resolution — pure leakage.
+    close_time = _parse_end_date(market.get("closedTime")) or _parse_end_date(market.get("endDate"))
     if not source_id or not question or close_time is None:
         return None
     if _json_list(market.get("outcomes")) != ["Yes", "No"]:
@@ -300,16 +303,29 @@ def upsert_events(session, rows: list[dict]) -> tuple[int, int]:
     if not rows:
         return 0, 0
     kept = skipped = 0
+    existing_unresolved: dict[tuple[str, str], object] = {}
     seen: set[tuple[str, str]] = set()
     for source in {row["source"] for row in rows}:
         ids = [row["source_id"] for row in rows if row["source"] == source]
-        found = session.scalars(
-            select(MarketEvent.source_id).where(MarketEvent.source == source, MarketEvent.source_id.in_(ids))
-        )
-        seen.update((source, source_id) for source_id in found)
+        for row_obj in session.scalars(
+            select(MarketEvent).where(MarketEvent.source == source, MarketEvent.source_id.in_(ids))
+        ):
+            seen.add((source, row_obj.source_id))
+            if row_obj.outcome is None:
+                existing_unresolved[(source, row_obj.source_id)] = row_obj
     for row in rows:
         key = (row["source"], row["source_id"])
         if key in seen:
+            # Resolution can reach gamma AFTER first ingest ("0","0" prices):
+            # refresh the settlement fields on rows we stored as unresolved.
+            # Price columns stay untouched — the price pass owns those.
+            stale = existing_unresolved.get(key)
+            if stale is not None and row.get("outcome") is not None:
+                stale.outcome = row["outcome"]
+                stale.final_price = row.get("final_price")
+                stale.close_time = row.get("close_time") or stale.close_time
+                stale.raw = row.get("raw") or stale.raw
+                existing_unresolved.pop(key)
             skipped += 1
             continue
         session.add(MarketEvent(**row))
