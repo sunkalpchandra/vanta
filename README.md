@@ -169,7 +169,7 @@ frontend/
 ## Honest scope notes
 
 - Market data, evidence, and the resolved track record are a **seeded demo corpus** — deterministic and clearly labeled in-app. Production ingest (Polymarket/Kalshi APIs, news, filings) plugs in at `data.py`'s seams.
-- The leaderboard's "vanta beats market" edge is a property of the demo seed, not a validated live track record.
+- The synthetic demo corpus deliberately claims **no edge** (vanta's simulated estimates derive from the market signal, never the outcome). The only accuracy numbers that mean anything come from the real-market backtest over ingested Polymarket/Kalshi events.
 - Auth is deliberately light: opt-in API-key gating (`REQUIRE_API_KEY=1`) for operator mutations — sessions, roles, and OAuth are out of scope for the demo.
 
 ## Roadmap

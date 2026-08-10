@@ -123,7 +123,7 @@ export default async function MethodologyPage() {
       <section className="card mt-4 border-accent/30 p-6">
         <div className="micro-label mb-3">Honest limits</div>
         <p className="text-sm leading-relaxed text-ink-2">
-          This deployment runs on a seeded demo corpus: market prices, evidence, and the resolved
+          The seeded corpus claims no forecasting edge by construction — simulated vanta estimates derive from the market signal, never the outcome. This deployment runs on a seeded demo corpus: market prices, evidence, and the resolved
           track record are deterministic fixtures that illustrate the system, not live data. The
           math is real; the edge is not yet earned. And when an LLM key is configured it writes the
           agents&apos; prose — never the numbers.
