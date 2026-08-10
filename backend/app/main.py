@@ -51,8 +51,11 @@ CACHE_RULES: list[tuple[str, int]] = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    with SessionLocal() as db:
-        seed_if_empty(db)
+    # VANTA_NO_SEED lets the snapshot exporter reuse a pre-populated corpus DB
+    # (real markets, synced prices) without the demo seeder writing into it.
+    if not os.environ.get("VANTA_NO_SEED"):
+        with SessionLocal() as db:
+            seed_if_empty(db)
     yield
 
 

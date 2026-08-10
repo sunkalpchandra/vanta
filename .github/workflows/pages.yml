@@ -51,15 +51,19 @@ jobs:
           PY
       - name: Sync live markets into bake DB
         # Best-effort by design: a venue API hiccup must never block a deploy.
-        # On failure the snapshot simply ships the deterministic seed.
+        # A real failure is surfaced as a warning (not silently swallowed);
+        # the snapshot then simply ships the deterministic seed.
         run: |
           python backend/scripts/sync_markets.py \
             --db "$RUNNER_TEMP/bake.db" \
-            --polymarket-pages 20 --kalshi-pages 2 || true
+            --polymarket-pages 20 --kalshi-pages 2 \
+            || echo "::warning::market sync failed — baking seed-only snapshot"
       - name: Bake API snapshot
         env:
           GIT_SHA: ${{ github.sha }}
           DATABASE_URL: sqlite:///${{ runner.temp }}/bake.db
+          # Reuse the seeded + market-synced bake DB as-is; don't reseed it.
+          VANTA_NO_SEED: "1"
         # The exporter honors a pre-set DATABASE_URL (and only mints its own
         # temp DB when none is set) — so this bakes from the seeded +
         # market-synced workspace DB above.
