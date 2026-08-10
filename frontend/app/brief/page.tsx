@@ -5,6 +5,15 @@ import { briefRssHref } from "@/lib/api";
 import { getBrief } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
 
+export const metadata = {
+  title: "morning brief — vanta",
+  description: "The things the world is most wrong about today, from the vanta agent pipeline.",
+  openGraph: {
+    title: "vanta morning brief",
+    description: "The things the world is most wrong about today.",
+  },
+};
+
 export default async function BriefPage() {
   const brief = await getBrief();
   return (
