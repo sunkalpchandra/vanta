@@ -106,3 +106,19 @@ def test_snapshot_meta_carries_commit_stamp(tmp_path, monkeypatch):
     meta = json.loads((tmp_path / "data" / "meta.json").read_text())
     assert meta["commit"] == "deadbee"
     assert meta["mode"] == "static-demo"
+
+
+def test_snapshot_per_market_dirs_present(snapshot_dir):
+    """The per-market snapshot dirs the detail page reads (price series and
+    vanta forecasts) must be baked whenever the sample has active markets —
+    they're keyed by id, not in DATA_TS_SNAPSHOT_NAMES, so guard them here."""
+    data = snapshot_dir / "data"
+    sample = json.loads((data / "markets-sample.json").read_text())
+    active = sample.get("active", [])
+    if not active:
+        return  # empty bake DB — nothing to key on
+    assert (data / "market-price").is_dir()
+    assert (data / "market-forecast").is_dir()
+    for m in active:
+        assert (data / "market-price" / f"{m['id']}.json").exists()
+        assert (data / "market-forecast" / f"{m['id']}.json").exists()
