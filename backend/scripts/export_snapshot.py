@@ -99,7 +99,10 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     (out_dir / "track-record.csv").write_text(csv_response.text)
     written.append("track-record.csv")
 
-    dump(data / "meta.json", {"mode": "static-demo", "questions": len(questions)})
+    dump(
+        data / "meta.json",
+        {"mode": "static-demo", "questions": len(questions), "commit": os.environ.get("GIT_SHA")},
+    )
     return written
 
 
