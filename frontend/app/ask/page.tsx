@@ -1,4 +1,5 @@
 import { AskForm } from "@/components/AskForm";
+import { DiscoveryPanel } from "@/components/DiscoveryPanel";
 
 export default function AskPage() {
   return (
@@ -18,6 +19,7 @@ export default function AskPage() {
         <p>· &quot;Will AGI happen before 2035?&quot;</p>
         <p>· &quot;Will Apple stock rise after its next earnings report?&quot;</p>
       </div>
+      <DiscoveryPanel />
     </div>
   );
 }
