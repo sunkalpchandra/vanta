@@ -1,15 +1,17 @@
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import AgentTrackRecord
+from ..models import AgentTrackRecord, Question
 from ..quant.scoring import brier_score, directional_accuracy, log_score
 from ..schemas import AgentLeaderboardRow
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
+
+KNOWN_AGENTS = {"research", "quant", "market", "sentiment", "historian", "synthesis"}
 
 
 @router.get("/leaderboard", response_model=list[AgentLeaderboardRow])
@@ -32,3 +34,27 @@ def agent_leaderboard(db: Session = Depends(get_db)):
     ]
     rows.sort(key=lambda r: r.brier)
     return rows
+
+
+@router.get("/{agent_name}/records")
+def agent_records(agent_name: str, db: Session = Depends(get_db)):
+    """One agent's frozen calls against outcomes — the receipts behind its
+    leaderboard row."""
+    if agent_name not in KNOWN_AGENTS:
+        raise HTTPException(status_code=404, detail="unknown agent")
+    rows = db.execute(
+        select(AgentTrackRecord, Question.question)
+        .join(Question, Question.id == AgentTrackRecord.question_id)
+        .where(AgentTrackRecord.agent == agent_name)
+        .order_by(AgentTrackRecord.resolved_at.desc())
+    ).all()
+    return [
+        {
+            "question_id": record.question_id,
+            "question": question_text,
+            "probability": record.probability,
+            "outcome": record.outcome,
+            "abs_error": round(abs(record.probability - record.outcome), 4),
+        }
+        for record, question_text in rows
+    ]
