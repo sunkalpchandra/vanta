@@ -83,6 +83,8 @@ accounts open with ⓥ10,000).
 | `POST /api/markets/{id}/trade` | Execute at the current synced venue price. Body: `{side: yes\|no, action: buy\|sell, shares, expected_price?}`. `expected_price` (optional) is the YES/NO price the ticket showed; if the live price has drifted more than 2 cents by execution time the fill is rejected with `409` (`detail: "price moved: ..."`). `X-API-Key` required. Returns the trade, new balance, and updated position. |
 | `GET /api/markets/portfolio/me` | Balance, every position marked to the current price, realized/unrealized P&L totals, and equity. `X-API-Key` required. |
 | `GET /api/markets/traders` | Play-money leaderboard: traders ranked by lifetime P&L (equity − the ⓥ10,000 start); accounts that never traded are excluded. |
+| `GET /api/markets/{id}/history` | Synced YES-price series for a market: `{event_id, points:[{timestamp, yes_price}]}`, ascending. `404` unknown id; empty points allowed. |
+| `GET /api/activity/trades` | Public trade tape across all traders, newest first (`?limit=`, ≤100). Trader names are redacted to the email local-part; bot traders show their agent name. Returns `{trades, note}`. |
 
 Trade validation: `shares > 0` (and `expected_price`, when sent, in (0, 1)) —
 `422` from the schema; execution price strictly in (0, 1); money rounds
