@@ -249,3 +249,32 @@ class Trade(Base):
     price: Mapped[float] = mapped_column(Float)  # execution price per share
     cost: Mapped[float] = mapped_column(Float)  # signed balance delta (negative = spent)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class PriceTick(Base):
+    """A synced venue-price observation for a market event — the series behind
+    the market's price chart. Written by the sync engine, one per event per
+    sync pass (deduped to at most one per event per hour to bound growth)."""
+
+    __tablename__ = "price_ticks"
+    __table_args__ = (Index("ix_price_ticks_event_ts", "event_id", "timestamp"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    yes_price: Mapped[float] = mapped_column(Float)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class AgentTrader(Base):
+    """One of vanta's autonomous play-money traders. Each is backed by a bot
+    User (user_id) and trades a fixed deterministic strategy over the
+    pipeline's forecasts, so it holds Positions and logs Trades through the
+    exact same engine as humans — the forecasting edge tested in P&L."""
+
+    __tablename__ = "agent_traders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(40), unique=True)  # e.g. "vanta-quant"
+    strategy: Mapped[str] = mapped_column(String(40))  # edge | contrarian | confidence
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
