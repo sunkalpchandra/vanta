@@ -22,7 +22,13 @@ export function StatsBar({ stats }: { stats: StatsOut }) {
       <StatTile
         label="vanta Brier"
         value={stats.vanta_brier != null ? stats.vanta_brier.toFixed(3) : "—"}
-        sub={stats.market_brier != null ? `market ${stats.market_brier.toFixed(3)} · lower is better` : undefined}
+        sub={
+          stats.market_brier != null
+            ? `market ${stats.market_brier.toFixed(3)} · log ${stats.vanta_log_score?.toFixed(2) ?? "—"} vs ${
+                stats.market_log_score?.toFixed(2) ?? "—"
+              }`
+            : undefined
+        }
       />
       <StatTile
         label="Avg live edge"
