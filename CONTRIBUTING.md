@@ -47,6 +47,22 @@ Shortcuts: `make test`, `make lint`, `make bench`, and `backend/scripts/smoke.sh
 every endpoint against a running backend). `make static` reproduces the
 GitHub Pages build locally.
 
+## End-to-end tests
+
+The Playwright suite drives the built static export — the artifact Pages
+actually serves — under its real `/vanta` base path:
+
+```bash
+cd frontend
+npm run build:static        # bake snapshot + export out/
+npx playwright install chromium   # first time only
+npm run test:e2e
+```
+
+Specs live in `frontend/e2e/`. Interactions must tolerate the hydration race:
+wrap click/fill in `expect(async () => {...}).toPass()` blocks (see
+`feed.spec.ts`) instead of sleeping.
+
 ## Commit style
 
 Small, granular commits — one logical change each, per-file where that is the
