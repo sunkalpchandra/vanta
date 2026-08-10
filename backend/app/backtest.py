@@ -50,24 +50,22 @@ def liquidity_for_volume(volume_usd: float) -> str:
     return "low"
 
 
-def category_outcome_counts(db: Session) -> dict[str, tuple[int, int]]:
-    """(n_resolved, n_yes) per category over the resolved MarketEvent corpus."""
+def resolved_corpus_timeline(db: Session) -> list[tuple]:
+    """(close_time, category, outcome) of every resolved event, close-time
+    ascending. Feeds the temporal prior: an event's base rate may only learn
+    from events that had ALREADY resolved when it closed."""
     rows = db.execute(
-        select(MarketEvent.category, func.count(), func.sum(MarketEvent.outcome))
-        .where(MarketEvent.outcome.is_not(None))
-        .group_by(MarketEvent.category)
+        select(MarketEvent.close_time, MarketEvent.category, MarketEvent.outcome)
+        .where(MarketEvent.outcome.is_not(None), MarketEvent.close_time.is_not(None))
+        .order_by(MarketEvent.close_time)
     ).all()
-    return {category: (int(n), int(yes or 0)) for category, n, yes in rows}
+    return [tuple(r) for r in rows]
 
 
-def leave_one_out_base_rate(counts: dict[str, tuple[int, int]], category: str, own_outcome: int) -> float:
-    """Category base rate learned from OTHER events only: the event's own
-    outcome is subtracted before blending, so no event informs its own prior.
-    Mirrors service.learned_base_rate's pseudo-count shrinkage."""
+def shrunk_base_rate(category: str, n: int, yes: int) -> float:
+    """Static prior blended with observed outcomes, pseudo-count shrinkage —
+    mirrors service.learned_base_rate."""
     static = base_rate_for(category)
-    n, yes = counts.get(category, (0, 0))
-    n -= 1
-    yes -= own_outcome
     if n <= 0:
         return static
     return (static * PSEUDO_COUNT + yes) / (PSEUDO_COUNT + n)
@@ -88,6 +86,9 @@ def context_for(event: MarketEvent, horizon_days: int, base_rate: float) -> Ques
         evidence=[],
         base_rate=round(base_rate, 4),
         narratives=False,  # numbers only — the LLM never touches a backtest
+        # REFERENCE_EVENTS hard-codes real-world outcomes; matching a real
+        # historical market against it is hindsight. No analogs in backtests.
+        analog_corpus=[],
     )
 
 
@@ -123,14 +124,26 @@ def run_backtest(
     if limit is not None:
         stmt = stmt.limit(limit)
 
-    counts = category_outcome_counts(db)
-    # Snapshot (id, context, outcome) tuples before any commit: commits expire
-    # ORM instances, and re-reading them mid-run would cost a query per event.
-    todo = [
-        (event.id, context_for(event, horizon_days, leave_one_out_base_rate(counts, event.category, event.outcome)),
-         event.outcome)
-        for event in db.scalars(stmt).all()
-    ]
+    # Temporal prior: walk candidates in close-time order alongside the
+    # resolved-corpus timeline, so each event's base rate reflects only what
+    # had already settled when it closed — never later resolutions, never
+    # itself. Snapshot (id, context, outcome) before any commit: commits
+    # expire ORM instances mid-run.
+    timeline = resolved_corpus_timeline(db)
+    candidates = sorted(db.scalars(stmt).all(), key=lambda e: e.close_time)
+    todo = []
+    cursor = 0
+    running: dict[str, list[int]] = {}  # category -> [n, yes]
+    for event in candidates:
+        while cursor < len(timeline) and timeline[cursor][0] < event.close_time:
+            _, cat, outcome = timeline[cursor]
+            bucket = running.setdefault(cat, [0, 0])
+            bucket[0] += 1
+            bucket[1] += outcome
+            cursor += 1
+        n, yes = running.get(event.category, (0, 0))
+        base_rate = shrunk_base_rate(event.category, n, yes)
+        todo.append((event.id, context_for(event, horizon_days, base_rate), event.outcome))
 
     scored = 0
     pending = 0
