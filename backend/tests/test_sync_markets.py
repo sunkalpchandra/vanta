@@ -423,7 +423,13 @@ def test_settlement_sweep_settles_resolved_events(db, monkeypatch):
 
     settled_calls = []
     trading = types.ModuleType("app.trading")
-    trading.settle_event = lambda session, event: settled_calls.append(event)
+
+    def _settle_event(session, event):
+        settled_calls.append(event)
+        return 1
+
+    trading.settle_event = _settle_event
+    trading.settle_resolved = lambda session: 0  # position-driven backstop (no-op here)
     monkeypatch.setitem(sys.modules, "app.trading", trading)
 
     probed = []

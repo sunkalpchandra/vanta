@@ -269,3 +269,116 @@ def test_market_list_filters_and_paginates(client):
     page = client.get(f"/api/markets?q={token}&limit=1&offset=1").json()
     assert page["total"] == 1 and page["items"] == []  # past the end, count intact
     assert client.get("/api/markets?sort=close_time").status_code == 200
+
+
+def _make_active_event(db, price=0.4, source_id="dust-1"):
+    from app.models import MarketEvent
+
+    ev = MarketEvent(
+        source="test-trade", source_id=source_id, question="Dust pump probe?",
+        category="other", active=True, yes_price=price, outcome=None,
+    )
+    db.add(ev)
+    db.commit()
+    return ev
+
+
+def test_dust_sells_cannot_mint_credits(client):
+    """The round-6 money pump: buy a lot, then liquidate in sub-cent slices —
+    balance must never exceed the fair single-sell value."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import Position, User
+    from app.trading import execute_trade
+
+    reg = client.post("/api/users", json={"email": "dust-pumper@example.com"})
+    key = reg.json()["api_key"]
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.api_key == key))
+        ev = _make_active_event(db, price=0.4, source_id="dust-sell")
+        start = user.balance
+        execute_trade(db, user, ev, "yes", "buy", 100)  # fair buy: ⓥ40
+        # Try to skim: 0.013-share slices each worth ⓥ0.0052.
+        for _ in range(200):
+            try:
+                execute_trade(db, user, ev, "yes", "sell", 0.013)
+            except Exception:
+                break
+        # Liquidate whatever remains as a full exit.
+        pos = db.scalar(select(Position).where(Position.user_id == user.id, Position.event_id == ev.id))
+        if pos and pos.shares > 0:
+            execute_trade(db, user, ev, "yes", "sell", pos.shares)
+        db.refresh(user)
+        # A fair round trip at an unchanged price can only lose to rounding.
+        assert user.balance <= start + 1e-9
+
+
+def test_dust_buys_cannot_mint_credits(client):
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import User
+    from app.trading import TradeError, execute_trade
+
+    reg = client.post("/api/users", json={"email": "dust-buyer@example.com"})
+    key = reg.json()["api_key"]
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.api_key == key))
+        ev = _make_active_event(db, price=0.01, source_id="dust-buy")
+        # Sub-cent-notional buys are rejected outright now.
+        with pytest.raises(TradeError):
+            execute_trade(db, user, ev, "yes", "buy", 0.5)  # notional ⓥ0.005
+
+
+def test_trading_halts_past_close(client):
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import MarketEvent, User
+    from app.trading import TradeError, execute_trade
+
+    reg = client.post("/api/users", json={"email": "late-trader@example.com"})
+    key = reg.json()["api_key"]
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.api_key == key))
+        ev = MarketEvent(
+            source="test-trade", source_id="past-close", question="Already closed?",
+            category="other", active=True, yes_price=0.5, outcome=None,
+            close_time=datetime.now(UTC) - timedelta(hours=1),
+        )
+        db.add(ev)
+        db.commit()
+        with pytest.raises(TradeError):
+            execute_trade(db, user, ev, "yes", "buy", 10)
+
+
+def test_settle_resolved_pays_outcome_set_without_settle(client):
+    """sync_active can record an outcome without settling; settle_resolved must
+    still pay the winners (the orphaned-payout black hole)."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import User
+    from app.trading import execute_trade, settle_resolved
+
+    reg = client.post("/api/users", json={"email": "orphan-winner@example.com"})
+    key = reg.json()["api_key"]
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.api_key == key))
+        ev = _make_active_event(db, price=0.25, source_id="orphan-settle")
+        execute_trade(db, user, ev, "yes", "buy", 100)  # ⓥ25 for 100 YES
+        db.refresh(user)
+        pre = user.balance
+        # Simulate sync_active's close branch: outcome set, NO settle call.
+        ev.outcome = 1
+        ev.active = False
+        db.commit()
+        paid = settle_resolved(db)
+        db.refresh(user)
+        assert paid >= 1
+        assert user.balance == pytest.approx(pre + 100.0)  # ⓥ1/share payout
+        # Idempotent — a second sweep pays nothing more.
+        assert settle_resolved(db) == 0
