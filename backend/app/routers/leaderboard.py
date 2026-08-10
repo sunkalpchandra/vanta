@@ -1,13 +1,13 @@
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Prediction
 from ..quant.scoring import calibration_bins
-from ..schemas import CalibrationBinOut, LeaderboardRow
+from ..schemas import CalibrationBinOut, LeaderboardRow, PredictionOut
 
 router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
 
@@ -42,6 +42,19 @@ def leaderboard(db: Session = Depends(get_db)):
     ]
     out.sort(key=lambda r: r.vanta_accuracy, reverse=True)
     return out
+
+
+@router.get("/predictions", response_model=list[PredictionOut])
+def predictions(
+    category: str | None = None,
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """The resolved track record, newest first — every settled call vanta has made."""
+    stmt = select(Prediction).order_by(Prediction.resolved_at.desc()).limit(limit)
+    if category:
+        stmt = stmt.where(Prediction.category == category)
+    return db.scalars(stmt).all()
 
 
 @router.get("/calibration", response_model=list[CalibrationBinOut])
