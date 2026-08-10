@@ -60,7 +60,10 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 - **Explanations** — leave-one-out evidence sensitivity, what-changed diffs, related questions, historical analogs, difficulty scores
 - **Operations** — alerts, digest, unified search, starred questions, operator notes, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
 - **Performance, measured** — constant-query hot paths, batched sparklines, gzip + caching; see [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
-- **Tested end to end** — 157 backend tests (95% coverage), 21 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
+- **Real markets** — checkpointed ingest of 100k+ resolved Polymarket/Kalshi binary markets; active top-volume markets promoted into the live feed
+- **Real backtest** — leakage-free scoring against pre-resolution venue prices with leave-one-out base rates and a no-skill benchmark; see [docs/BACKTEST.md](docs/BACKTEST.md)
+- **Reasoning chat** — `/chat` streams the live agent debate over SSE: per-agent stances and arguments as they compute, then the final scorecard
+- **Tested end to end** — 200+ backend tests (95% coverage), 32 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
 - **Keyboard-first** — `/` focuses search, `[` and `]` page through questions; brief and question pages print cleanly
 
 ## Quick start (no keys, no Docker)
