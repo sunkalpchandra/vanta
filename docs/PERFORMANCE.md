@@ -47,3 +47,18 @@ cd backend && .venv/bin/python scripts/bench.py --n 30
 Query-count regressions fail CI via `tests/test_performance.py` — if a change
 reintroduces per-question queries on the feed, movers, or sparklines paths,
 the suite catches it without needing a timing harness.
+
+## Middleware order is a correctness *and* latency property
+
+CORS registers last, making it outermost — 429s from the rate limiter and
+shielded 500s carry CORS headers, so browsers surface the real status instead
+of an opaque error (which clients then retry, amplifying load). Cache headers
+apply only to 2xx responses: a cached 404 would pin missing-resource responses
+into shared proxies for the full max-age.
+
+## Brief cache scoping
+
+`/api/brief` cache keys include the category scope
+(`vanta:brief:{count}:{category|all}`), so a per-category brief can never be
+served to an all-category subscriber or vice versa. Invalidation on resolution
+deletes by key prefix rather than enumerating counts.
