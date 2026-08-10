@@ -13,12 +13,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.main import app  # DB binding happens in conftest.py
-from app.models import MarketEvent, User
-
-# Until main.py wires the router (shared file — integration step), mount it
-# here. The guard makes this a no-op once main.py includes it, so it can't
-# double-register. The markets router owns /api/markets/traders, a different
-# prefix, so this only ever mounts our /api/traders surface.
+from app.models import MarketEvent
 
 DISCLAIMER = "play money · paper trading · real market prices"
 
@@ -165,13 +160,20 @@ def test_handle_collision_resolves_first_by_id(client):
     second = client.post("/api/users", json={"email": f"{handle}@b.test"}).json()
     assert first["id"] < second["id"]
 
-    # Distinct balances make the resolved user observable through the profile.
-    with SessionLocal() as db:
-        db.get(User, first["id"]).balance = 12_345.0
-        db.get(User, second["id"]).balance = 999.0
-        db.commit()
+    # Both must have traded to have a public profile (never-traded accounts
+    # 404 — no balance enumeration). Give them distinct balances via trades.
+    event = _make_event(0.4)
+    _trade(client, first, event, "yes", "buy", 10)  # first spends ⓥ4
+    _trade(client, second, event, "yes", "buy", 100)  # second spends ⓥ40
 
     body = client.get(f"/api/traders/{handle}").json()
     assert body["name"] == handle  # both share the handle; the endpoint returns one
     # First-by-id wins deterministically: the lower-id registration's book shows.
-    assert body["balance"] == pytest.approx(12_345.0)
+    assert body["balance"] == pytest.approx(9996.0)  # 10000 - 4
+
+
+def test_never_traded_handle_is_not_enumerable(client):
+    handle = f"idle-{uuid.uuid4().hex[:8]}"
+    client.post("/api/users", json={"email": f"{handle}@a.test"})
+    # Registered but never traded -> 404, so balances can't be enumerated.
+    assert client.get(f"/api/traders/{handle}").status_code == 404
