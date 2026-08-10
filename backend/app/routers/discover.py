@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..deps import require_operator
 from ..discovery import all_candidates, discover, is_covered, pending_candidates
 from ..models import WatchlistItem
 from ..schemas import DiscoveredQuestion, QuestionOut, WatchlistIn
@@ -26,7 +27,7 @@ def list_watchlist(db: Session = Depends(get_db)):
     ]
 
 
-@router.delete("/watchlist/{item_id}", status_code=204)
+@router.delete("/watchlist/{item_id}", status_code=204, dependencies=[Depends(require_operator)])
 def remove_watchlist_item(item_id: int, db: Session = Depends(get_db)):
     item = db.get(WatchlistItem, item_id)
     if item is None:
@@ -35,7 +36,7 @@ def remove_watchlist_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-@router.post("/watchlist", status_code=201)
+@router.post("/watchlist", status_code=201, dependencies=[Depends(require_operator)])
 def add_watchlist_item(body: WatchlistIn, db: Session = Depends(get_db)):
     """Point autonomous research at a signal worth watching."""
     exists = db.scalar(select(WatchlistItem).where(WatchlistItem.question == body.question))
@@ -69,7 +70,7 @@ def candidates(db: Session = Depends(get_db)):
     ]
 
 
-@router.post("", response_model=list[DiscoveredQuestion], status_code=201)
+@router.post("", response_model=list[DiscoveredQuestion], status_code=201, dependencies=[Depends(require_operator)])
 def run_discovery(count: int = Query(3, ge=1, le=5), db: Session = Depends(get_db)):
     """Autonomous research mode: mint new questions from uncovered watchlist
     signals and forecast each with the full agent pipeline."""
