@@ -11,6 +11,8 @@ import type {
   TraderBoard,
   TradeTapeItem,
   MarketHistoryPoint,
+  MarketStats,
+  MarketMover,
   RealBacktestOut,
   AgentCalibrationBin,
   AgentLeaderboardRow,
@@ -168,4 +170,19 @@ export async function getMarketPriceHistory(id: string): Promise<MarketHistoryPo
     { points: [] },
   );
   return h.points ?? [];
+}
+
+
+export const getMarketStatsSample = () =>
+  get<MarketStats | null>("/api/market-stats", "market-stats.json", null);
+
+export const getMarketMoversSample = () =>
+  get<MarketMover[]>("/api/market-stats/movers?window_hours=24&limit=20", "market-movers.json", []);
+
+// Baked in static mode (active sampled markets only); live mode fetches on demand.
+export async function getMarketForecast(id: string): Promise<import("@/components/MarketForecast").MarketForecastData | null> {
+  if (IS_STATIC) {
+    return readSnapshot(`market-forecast/${id}.json`, null);
+  }
+  return get(`/api/markets/${id}/forecast`, `market-forecast/${id}.json`, null);
 }

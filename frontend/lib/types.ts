@@ -265,3 +265,5 @@ export interface MarketHistoryPoint {
 }
 
 export type { TradeTapeItem } from "./activity";
+
+export type { MarketStats, MarketMover } from "./marketStats";
