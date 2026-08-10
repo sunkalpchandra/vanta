@@ -32,13 +32,25 @@ def _require_trader(db: Session, x_api_key: str | None) -> User:
     return user
 
 
+def _defuse(cell):
+    """Neutralize spreadsheet formula injection (CWE-1236): a text cell that
+    begins with =, +, -, @, or a control char is executed as a formula by
+    Excel/Sheets/LibreOffice. Market questions are untrusted venue text, so
+    prefix a single quote to force text interpretation. Non-strings pass
+    through (numbers can't trigger it)."""
+    if isinstance(cell, str) and cell[:1] in ("=", "+", "-", "@", "\t", "\r", "\n"):
+        return "'" + cell
+    return cell
+
+
 def _csv_response(rows: list[list], header: list[str], filename: str) -> Response:
-    """Serialize rows to CSV via the stdlib writer (correct quoting/escaping of
-    commas, quotes, newlines) and return it as a downloadable attachment."""
+    """Serialize rows to CSV via the stdlib writer (RFC-4180 quoting of commas,
+    quotes, newlines) with formula-injection defusing on every cell, returned
+    as a downloadable attachment."""
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(header)
-    writer.writerows(rows)
+    writer.writerows([_defuse(cell) for cell in row] for row in rows)
     return Response(
         content=buffer.getvalue(),
         media_type="text/csv",
