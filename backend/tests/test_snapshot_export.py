@@ -19,11 +19,34 @@ def snapshot_dir(tmp_path_factory):
     return out
 
 
+# Lockstep guard: every snapshot name frontend/lib/data.ts reads must exist.
+# When adding a getter there, extend this list AND export_snapshot.py.
+DATA_TS_SNAPSHOT_NAMES = [
+    "feed",
+    "questions",
+    "brief",
+    "leaderboard",
+    "calibration",
+    "predictions",
+    "stats",
+    "categories",
+    "movers",
+    "agents",
+    "backtest",
+    "meta",
+]
+
+
 def test_snapshot_top_level_files(snapshot_dir):
-    for name in ["feed", "questions", "brief", "leaderboard", "calibration", "stats", "categories", "meta"]:
+    for name in DATA_TS_SNAPSHOT_NAMES:
         path = snapshot_dir / "data" / f"{name}.json"
         assert path.exists(), name
         json.loads(path.read_text())
+
+
+def test_snapshot_brief_xml(snapshot_dir):
+    rss = (snapshot_dir / "brief.xml").read_text()
+    assert rss.startswith("<?xml") and "vanta Morning Brief" in rss
 
 
 def test_snapshot_per_question_files(snapshot_dir):
