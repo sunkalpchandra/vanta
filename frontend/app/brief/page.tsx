@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { TodayDate } from "@/components/TodayDate";
-import { getBrief } from "@/lib/api";
+import { getBrief } from "@/lib/data";
 import { pct, signedPct } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
 
 export default async function BriefPage() {
   const brief = await getBrief();
