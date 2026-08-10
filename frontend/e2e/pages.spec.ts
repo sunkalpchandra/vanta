@@ -65,7 +65,7 @@ test("markets page shows real events or the honest empty state", async ({ page }
   // CI's deterministic bake carries no synced events (sync runs only in the
   // Pages workflow) — the page must show prices OR its honest empty state.
   await expect(
-    page.getByText(/%/).first().or(page.getByText(/no markets|sample of the live corpus/i).first()),
+    page.getByText(/%/).first().or(page.getByText(/no markets|sample of the live corpus/i).first()).first(),
   ).toBeVisible();
 });
 
