@@ -52,26 +52,35 @@ def _seed_demo_resolutions(db: Session) -> bool:
 
 
 def _seed_questions(db: Session) -> bool:
-    existing = set(db.scalars(select(Question.question)).all())
     changed = False
     for spec in SEED_QUESTIONS:
-        if spec["question"] in existing:
-            continue
-        changed = True
-        question = create_question(
-            db,
-            text=spec["question"],
-            category=spec["category"],
-            horizon_days=spec["horizon_days"],
-            market_probability=spec["market_probability"],
-            market_volume_usd=spec["volume_usd"],
-            market_liquidity=spec["liquidity"],
-            evidence=spec["evidence"],
-        )
+        question = db.scalar(select(Question).where(Question.question == spec["question"]))
+        if question is None:
+            changed = True
+            question = create_question(
+                db,
+                text=spec["question"],
+                category=spec["category"],
+                horizon_days=spec["horizon_days"],
+                market_probability=spec["market_probability"],
+                market_volume_usd=spec["volume_usd"],
+                market_liquidity=spec["liquidity"],
+                evidence=spec["evidence"],
+            )
+        elif _has_forecast(db, question):
+            continue  # fully seeded on an earlier boot
+        else:
+            # Crash landed between the question commit and the forecast
+            # commit on a previous boot — finish the job, don't skip it.
+            changed = True
         forecast, _ = run_and_store_forecast(db, question)
         _backfill_history(db, question, forecast)
     db.commit()
     return changed
+
+
+def _has_forecast(db: Session, question: Question) -> bool:
+    return db.scalar(select(Forecast).where(Forecast.question_id == question.id).limit(1)) is not None
 
 
 def _backfill_history(db: Session, question: Question, forecast: Forecast, days: int = 30) -> None:
