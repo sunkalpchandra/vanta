@@ -56,6 +56,7 @@ def test_snapshot_per_question_files(snapshot_dir):
     for q in questions:
         assert (snapshot_dir / "data" / "questions" / f"{q['id']}.json").exists()
         assert (snapshot_dir / "data" / "history" / f"{q['id']}.json").exists()
+        assert (snapshot_dir / "data" / "market-history" / f"{q['id']}.json").exists()
         assert (snapshot_dir / "cards" / f"{q['id']}.svg").exists()
 
 

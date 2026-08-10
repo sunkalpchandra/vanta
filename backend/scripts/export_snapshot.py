@@ -22,6 +22,7 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
     data = out_dir / "data"
     (data / "questions").mkdir(parents=True, exist_ok=True)
     (data / "history").mkdir(parents=True, exist_ok=True)
+    (data / "market-history").mkdir(parents=True, exist_ok=True)
     (out_dir / "cards").mkdir(parents=True, exist_ok=True)
     written: list[str] = []
 
@@ -53,6 +54,10 @@ def export_snapshot(client, out_dir: Path) -> list[str]:
         qid = question["id"]
         dump(data / "questions" / f"{qid}.json", client.get(f"/api/questions/{qid}").json())
         dump(data / "history" / f"{qid}.json", client.get(f"/api/questions/{qid}/history").json())
+        dump(
+            data / "market-history" / f"{qid}.json",
+            client.get(f"/api/questions/{qid}/market-history").json(),
+        )
         card = client.get(f"/api/cards/{qid}.svg")
         card.raise_for_status()
         card_path = out_dir / "cards" / f"{qid}.svg"
