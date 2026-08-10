@@ -58,8 +58,10 @@ vanta is **not** a gambling platform. It is a forecasting intelligence system.
 - **Shareable cards** — self-contained SVG prediction cards, stamped once resolved
 - **Market history** — the market is a moving series, charted against vanta with evidence-arrival markers
 - **Explanations** — leave-one-out evidence sensitivity, what-changed diffs, related questions, historical analogs, difficulty scores
-- **Operations** — alerts, digest, unified search, starred questions, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
+- **Operations** — alerts, digest, unified search, starred questions, operator notes, operator CLI, `/metrics`, opt-in API-key gating, rate limiting
 - **Performance, measured** — constant-query hot paths, batched sparklines, gzip + caching; see [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+- **Tested end to end** — 149 backend tests (95% coverage), 21 frontend unit tests, and a Playwright suite that drives the exact static artifact GitHub Pages serves
+- **Keyboard-first** — `/` focuses search, `[` and `]` page through questions; brief and question pages print cleanly
 
 ## Quick start (no keys, no Docker)
 
@@ -168,7 +170,7 @@ frontend/
 
 - Market data, evidence, and the resolved track record are a **seeded demo corpus** — deterministic and clearly labeled in-app. Production ingest (Polymarket/Kalshi APIs, news, filings) plugs in at `data.py`'s seams.
 - The leaderboard's "vanta beats market" edge is a property of the demo seed, not a validated live track record.
-- Users table exists in the schema; auth is not wired up yet.
+- Auth is deliberately light: opt-in API-key gating (`REQUIRE_API_KEY=1`) for operator mutations — sessions, roles, and OAuth are out of scope for the demo.
 
 ## Roadmap
 
