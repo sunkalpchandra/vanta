@@ -1,10 +1,16 @@
+import { AlertsStrip } from "@/components/AlertsStrip";
 import { FeedExplorer } from "@/components/FeedExplorer";
 import { MoversStrip } from "@/components/MoversStrip";
-import { getFeed, getMovers, getSparklines } from "@/lib/data";
+import { getAlerts, getFeed, getMovers, getSparklines } from "@/lib/data";
 
 export default async function FeedPage() {
   // One payload for all sparklines instead of one history call per card.
-  const [feed, movers, sparklines] = await Promise.all([getFeed(), getMovers(), getSparklines()]);
+  const [feed, movers, sparklines, alerts] = await Promise.all([
+    getFeed(),
+    getMovers(),
+    getSparklines(),
+    getAlerts(),
+  ]);
   return (
     <div>
       <div className="mb-8">
@@ -13,6 +19,7 @@ export default async function FeedPage() {
           Where vanta&apos;s agent pipeline most disagrees with prediction markets — ranked by edge.
         </p>
       </div>
+      <AlertsStrip alerts={alerts} />
       <MoversStrip movers={movers} />
       {feed.length === 0 ? (
         <div className="card p-8 text-center text-sm text-muted">
