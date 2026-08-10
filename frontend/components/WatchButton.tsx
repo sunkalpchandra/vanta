@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IS_STATIC } from "@/lib/config";
-import { ensureTrader } from "@/lib/trader";
-import { toggleWatch } from "@/lib/watch";
+import { ensureTrader, getTraderKey } from "@/lib/trader";
+import { getWatchedIds, toggleWatch } from "@/lib/watch";
 
 /**
  * Star toggle that watches a market for 24h price moves. Presentational — the
@@ -26,6 +26,19 @@ export function WatchButton({
   const [watched, setWatched] = useState(initialWatched);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+
+  // Reflect the real server-side watch state: if a trader key exists, fetch
+  // whether this market is already watched so the star isn't stuck unfilled.
+  useEffect(() => {
+    if (IS_STATIC || initialWatched || !getTraderKey()) return;
+    let cancelled = false;
+    getWatchedIds()
+      .then((ids) => !cancelled && ids.includes(eventId) && setWatched(true))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, initialWatched]);
 
   if (IS_STATIC) {
     return (
