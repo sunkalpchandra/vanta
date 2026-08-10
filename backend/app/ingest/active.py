@@ -329,6 +329,10 @@ def fetch_venue_row(source: str, source_id: str, *, client: httpx.Client | None 
         finally:
             if owns_client:
                 client.close()
+    from . import manifold  # local: manifold imports from this module
+
+    if source == manifold.SOURCE:
+        return manifold.fetch_market(source_id)
     raise ValueError(f"unknown source {source!r}")
 
 
@@ -349,4 +353,8 @@ def resolution_of(source: str, row: dict | None) -> int | None:
         return _outcome_from_prices(prices) if len(prices) == 2 else None
     if source == KALSHI:
         return {"yes": 1, "no": 0}.get(row.get("result"))
+    from . import manifold  # local: manifold imports from this module
+
+    if source == manifold.SOURCE:
+        return manifold.resolution_of(row)
     raise ValueError(f"unknown source {source!r}")
