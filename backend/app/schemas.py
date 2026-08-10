@@ -26,6 +26,7 @@ class EvidenceOut(BaseModel):
     summary: str
     sentiment: str
     impact: float
+    created_at: UTCDateTime
 
 
 class AgentReportOut(BaseModel):
