@@ -138,7 +138,9 @@ Full reference: [docs/API.md](docs/API.md).
 ## Tests
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q   # quant math, pipeline, API
+make verify   # lint + 98 backend tests + live build + static export
+# or just the suite:
+cd backend && .venv/bin/python -m pytest tests/ -q
 ```
 
 ## Project layout
