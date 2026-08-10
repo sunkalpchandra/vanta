@@ -82,6 +82,21 @@ class AgentReport(Base):
     question: Mapped[Question] = relationship(back_populates="agent_reports")
 
 
+class AgentTrackRecord(Base):
+    """Frozen per-agent probability at resolution time — the internal
+    forecaster competition. Written by resolve_question from the final
+    agent_reports snapshot."""
+
+    __tablename__ = "agent_track_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), index=True)
+    agent: Mapped[str] = mapped_column(String(40), index=True)
+    probability: Mapped[float] = mapped_column(Float)
+    outcome: Mapped[int] = mapped_column(Integer)
+    resolved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Prediction(Base):
     """Resolved historical predictions — powers the accuracy leaderboard."""
 
