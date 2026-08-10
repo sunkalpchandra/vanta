@@ -144,7 +144,7 @@ Full reference: [docs/API.md](docs/API.md).
 ## Tests
 
 ```bash
-make verify   # lint + 98 backend tests + live build + static export
+make verify   # lint + the full backend suite + live build + static export
 # or just the suite:
 cd backend && .venv/bin/python -m pytest tests/ -q
 ```
