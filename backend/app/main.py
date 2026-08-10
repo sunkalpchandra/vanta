@@ -23,6 +23,7 @@ from .routers import (
     discover,
     feed,
     leaderboard,
+    markets,
     questions,
     search,
     stats,
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="vanta",
     description="Autonomous multi-agent forecasting intelligence platform",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
     openapi_tags=[
         {"name": "questions", "description": "The question lifecycle: ask, forecast, evidence, resolve, notes."},
@@ -74,6 +75,7 @@ app = FastAPI(
         {"name": "cards", "description": "Self-contained SVG share cards."},
         {"name": "backtest", "description": "Leakage-free backtest of the pipeline over real ingested markets."},
         {"name": "chat", "description": "Real-time reasoning chat — SSE stream of the agent debate."},
+        {"name": "markets", "description": "Play-money prediction market over real synced events."},
     ],
 )
 
@@ -174,6 +176,7 @@ app.include_router(users.router)
 app.include_router(search.router)
 app.include_router(backtest.router)
 app.include_router(chat.router)
+app.include_router(markets.router)
 
 
 @app.get("/metrics")
