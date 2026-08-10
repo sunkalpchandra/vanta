@@ -56,6 +56,15 @@ adheres to [Semantic Versioning](https://semver.org/).
   immediate re-forecast, resolve YES/NO.
 - Accessibility: skip-to-content link, search labels, mobile-safe nav labels.
 - CI: live-server smoke job.
+- Analog-engine backtest (`GET /api/quant/backtest`) published with its
+  base-rate benchmark, surfaced on the methodology page.
+- Learned category base rates: the historian and synthesis shrinkage blend
+  the static prior with the observed resolved record.
+- Watchlist lifecycle (list/add/delete) with a watch-a-signal form; feed sort
+  options; per-category pages, calibration filter, and leaderboard links.
+- Brief RSS feed (`/api/brief/rss`, baked as `brief.xml` in the demo);
+  robots.txt + sitemap; per-question og:image share cards;
+  prefers-reduced-motion support.
 
 ### Planned
 
