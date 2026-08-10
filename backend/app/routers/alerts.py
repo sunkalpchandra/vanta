@@ -1,4 +1,7 @@
+import html
+
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -59,3 +62,32 @@ def alerts(
             items.append(max(candidates, key=lambda a: abs(a.value)))
     items.sort(key=lambda a: abs(a.value), reverse=True)
     return items
+
+
+@router.get("/rss")
+def alerts_rss(
+    days: int = Query(3, ge=1, le=30),
+    min_move: float = Query(0.05, gt=0, lt=1),
+    min_edge: float = Query(0.15, gt=0, lt=1),
+    db: Session = Depends(get_db),
+):
+    """The alert stream as RSS — watch for big moves and edges from a reader."""
+    items = alerts(days=days, min_move=min_move, min_edge=min_edge, db=db)
+    entries = "".join(
+        f"""
+  <item>
+    <title>{html.escape(f"[{i.kind}] {i.question}")}</title>
+    <description>{html.escape(i.detail)}</description>
+    <guid isPermaLink="false">vanta-alert-{i.kind}-{i.question_id}</guid>
+  </item>"""
+        for i in items
+    )
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>vanta Alerts</title>
+  <link>https://sunkalpchandra.github.io/vanta/</link>
+  <description>Big probability moves and live edges from the vanta pipeline.</description>{entries}
+</channel>
+</rss>"""
+    return Response(content=xml, media_type="application/rss+xml")
