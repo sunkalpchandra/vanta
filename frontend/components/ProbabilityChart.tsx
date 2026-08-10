@@ -74,6 +74,10 @@ export function ProbabilityChart({
     });
   }
   const data = Array.from(byDay.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  // A one-point line is invisible (zero-length path) — show dots for sparse
+  // series so single-forecast questions (e.g. freshly discovered) still render.
+  const vantaCount = data.filter((d) => d.vanta != null).length;
+  const marketCount = data.filter((d) => d.market != null).length;
 
   // Evidence arrivals mapped onto the chart's own day buckets (category axis:
   // a ReferenceLine x must equal an existing data point's key).
@@ -128,7 +132,7 @@ export function ProbabilityChart({
             strokeWidth={2}
             strokeDasharray="7 3"
             connectNulls
-            dot={false}
+            dot={marketCount < 3 ? { r: 3, fill: MARKET, strokeWidth: 0 } : false}
             activeDot={{ r: 4, fill: MARKET, stroke: "#0f131b", strokeWidth: 2 }}
           />
           <Line
@@ -138,7 +142,7 @@ export function ProbabilityChart({
             stroke={VANTA}
             strokeWidth={2}
             connectNulls
-            dot={false}
+            dot={vantaCount < 3 ? { r: 3, fill: VANTA, strokeWidth: 0 } : false}
             activeDot={{ r: 4, fill: VANTA, stroke: "#0f131b", strokeWidth: 2 }}
           />
         </LineChart>
