@@ -99,6 +99,11 @@ def ingest_markets(session, ckpt: dict, ckpt_path: Path, limit_events: int) -> N
             since_print = 0
         time.sleep(0.05)  # be polite between pages
     flush()
+    if kept_total:
+        # New rows land at the HIGHEST ids — above any partial-pass price
+        # watermark. Reset it so the newest-first walk sees them next run.
+        ckpt.pop("price_before_id", None)
+        save_checkpoint(ckpt_path, ckpt)
     print(f"markets done: offset={offset} kept={kept_total} skipped={skipped_total} rejected={rejected_total}")
 
 
@@ -118,6 +123,7 @@ def fill_prices(session, ckpt: dict, ckpt_path: Path, budget: int) -> None:
     # history, so ascending order burns the whole budget discovering empties.
     before_id = int(ckpt.get("price_before_id") or 2**62)
     fetched = filled = 0
+    completed_pass = False
     since_commit = 0
 
     def flush() -> None:
@@ -142,8 +148,11 @@ def fill_prices(session, ckpt: dict, ckpt_path: Path, budget: int) -> None:
             .limit(200)
         ).all()
         if not events:
-            before_id = 2**62  # full pass complete: next run retries the empties
-            break
+            before_id = 2**62  # full pass complete: retry empties from the top
+            if completed_pass:
+                break  # second completion this run — corpus fully swept
+            completed_pass = True
+            continue
         for event in events:
             if fetched >= budget:
                 budget_hit = True
