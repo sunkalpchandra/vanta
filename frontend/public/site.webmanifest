@@ -1,0 +1,17 @@
+{
+  "name": "vanta — forecasting intelligence",
+  "short_name": "vanta",
+  "description": "What the world believes will happen — and what will actually happen.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
