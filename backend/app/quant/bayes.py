@@ -56,7 +56,9 @@ def agreement_confidence(estimates: list[tuple[float, float]], pooled: float) ->
     total_w = sum(w for _, w in estimates)
     z_pooled = logit(pooled)
     variance = sum(w * (logit(p) - z_pooled) ** 2 for p, w in estimates) / total_w
-    dispersion_penalty = min(4.0, variance * 1.6)
-    decisiveness = min(3.0, abs(z_pooled) * 1.4)
+    # Caps chosen so the score spans [1.0, 9.5]: unanimous + decisive agents
+    # can reach the top of the scale, heavy disagreement bottoms out at 1.
+    dispersion_penalty = min(4.5, variance * 1.6)
+    decisiveness = min(4.0, abs(z_pooled) * 1.6)
     score = 5.5 + decisiveness - dispersion_penalty
     return round(max(1.0, min(10.0, score)), 1)

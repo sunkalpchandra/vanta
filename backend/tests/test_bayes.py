@@ -47,6 +47,15 @@ def test_confidence_rewards_agreement_and_decisiveness():
     assert 1.0 <= c_disagree <= c_agree <= 10.0
 
 
+def test_confidence_spans_the_scale():
+    """Regression: unanimous, decisive agents must be able to score near the
+    top of the 10-point scale (the old caps silently limited it to 8.5)."""
+    unanimous = [(0.97, 1.0), (0.96, 1.0), (0.97, 1.0)]
+    assert agreement_confidence(unanimous, pool(unanimous)) >= 9.0
+    coin_flip_fight = [(0.95, 1.0), (0.05, 1.0)]
+    assert agreement_confidence(coin_flip_fight, pool(coin_flip_fight)) == 1.0
+
+
 def test_pool_extreme_inputs_stay_finite():
     pooled = pool([(0.999999, 1.0), (0.000001, 1.0)])
     assert math.isfinite(pooled)

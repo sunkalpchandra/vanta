@@ -21,7 +21,11 @@ class SynthesisAgent(Agent):
     name = "synthesis"
 
     def run(self, ctx: QuestionContext, prior_outputs: list[AgentOutput]) -> AgentOutput:
-        estimates = [(o.probability, o.weight) for o in prior_outputs if o.probability and o.weight > 0]
+        estimates = [
+            (o.probability, o.weight)
+            for o in prior_outputs
+            if o.probability is not None and o.weight > 0
+        ]
         pooled = pool(estimates)
         final_p = shrink_to_base_rate(pooled, base_rate_for(ctx.category), strength=0.12)
 
@@ -36,7 +40,7 @@ class SynthesisAgent(Agent):
         contributions = "; ".join(
             f"{o.agent} {o.probability:.0%} (w={o.weight:.1f})"
             for o in prior_outputs
-            if o.probability and o.weight > 0
+            if o.probability is not None and o.weight > 0
         )
         fallback = (
             f"Weighted log-odds pooling of {len(estimates)} agent estimates ({contributions}), "

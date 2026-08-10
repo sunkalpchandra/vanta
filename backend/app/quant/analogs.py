@@ -41,7 +41,10 @@ def similarity(q_tokens: set[str], q_category: str, ref_text: str, ref_category:
         overlap = 0.0
     else:
         overlap = len(q_tokens & ref_tokens) / len(q_tokens | ref_tokens)
-    category_bonus = 0.35 if q_category == ref_category else 0.0
+    # Category membership only *amplifies* topical overlap — on its own it must
+    # not clear the min_similarity gate, or every same-category event becomes a
+    # fake "analog" and the quant agent can never abstain.
+    category_bonus = 0.35 if overlap > 0 and q_category == ref_category else 0.0
     return min(1.0, overlap + category_bonus)
 
 

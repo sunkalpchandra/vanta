@@ -27,6 +27,13 @@ def test_analogs_empty_when_nothing_similar():
     assert report.n == 0 and report.hit_rate is None
 
 
+def test_category_alone_is_not_an_analog():
+    """Regression: the category bonus must not clear the similarity gate by
+    itself, or zero-overlap same-category events become fake analogs."""
+    report = find_analogs("Will the favorite win the chess world championship?", "finance", REFS)
+    assert report.n == 0 and report.hit_rate is None
+
+
 def test_monte_carlo_is_deterministic_and_sane():
     a = simulate(0.7, evidence_strength=20, market_probability=0.6)
     b = simulate(0.7, evidence_strength=20, market_probability=0.6)

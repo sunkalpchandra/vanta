@@ -24,7 +24,11 @@ class SkepticAgent(Agent):
     name = "skeptic"
 
     def run(self, ctx: QuestionContext, prior_outputs: list[AgentOutput]) -> AgentOutput:
-        pooled_inputs = [(o.probability, o.weight) for o in prior_outputs if o.probability and o.weight > 0]
+        pooled_inputs = [
+            (o.probability, o.weight)
+            for o in prior_outputs
+            if o.probability is not None and o.weight > 0
+        ]
         interim = pool(pooled_inputs) if pooled_inputs else ctx.market_probability
         consensus_bullish = interim >= ctx.market_probability
 
