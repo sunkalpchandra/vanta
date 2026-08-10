@@ -17,11 +17,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const detail = await getQuestion(id);
   if (!detail) return { title: "not found — vanta" };
+  const description = detail.latest_forecast
+    ? `vanta ${pct(detail.latest_forecast.probability)} vs market ${pct(detail.market_probability)}`
+    : detail.question;
   return {
     title: `${detail.question} — vanta`,
-    description: detail.latest_forecast
-      ? `vanta ${pct(detail.latest_forecast.probability)} vs market ${pct(detail.market_probability)}`
-      : detail.question,
+    description,
+    openGraph: {
+      title: detail.question,
+      description,
+      images: [{ url: shareCardHref(detail.id), width: 800, height: 418 }],
+    },
   };
 }
 
