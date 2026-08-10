@@ -10,6 +10,31 @@ from ..schemas import DiscoveredQuestion, QuestionOut, WatchlistIn
 router = APIRouter(prefix="/api/discover", tags=["discover"])
 
 
+@router.get("/watchlist")
+def list_watchlist(db: Session = Depends(get_db)):
+    """User-added watchlist items (the built-in list lives in code)."""
+    items = db.scalars(select(WatchlistItem).order_by(WatchlistItem.created_at.asc())).all()
+    return [
+        {
+            "id": w.id,
+            "question": w.question,
+            "category": w.category,
+            "horizon_days": w.horizon_days,
+            "rationale": w.rationale,
+        }
+        for w in items
+    ]
+
+
+@router.delete("/watchlist/{item_id}", status_code=204)
+def remove_watchlist_item(item_id: int, db: Session = Depends(get_db)):
+    item = db.get(WatchlistItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="watchlist item not found")
+    db.delete(item)
+    db.commit()
+
+
 @router.post("/watchlist", status_code=201)
 def add_watchlist_item(body: WatchlistIn, db: Session = Depends(get_db)):
     """Point autonomous research at a signal worth watching."""
