@@ -36,7 +36,59 @@ def seed_if_empty(db: Session) -> bool:
         _seed_resolved_predictions(db)
         changed = True
     changed = _seed_demo_resolutions(db) or changed
+    changed = _seed_demo_markets(db) or changed
     return changed
+
+
+def _seed_demo_markets(db: Session) -> bool:
+    """A small set of active demo MarketEvents + price ticks so the play-money
+    trading surface and its /markets/{id} pages exist in the static export
+    (which bakes from a fresh seed, before any live venue sync). Clearly demo
+    data — deterministic, labeled 'demo' as the source."""
+    from .models import MarketEvent, PriceTick
+
+    if db.scalar(select(MarketEvent).where(MarketEvent.source == "demo").limit(1)) is not None:
+        return False
+    rng = random.Random(90210)
+    now = utcnow()
+    demos = [
+        ("Will a demo market resolve YES by year end?", "technology", 0.62),
+        ("Will the sample index close higher this quarter?", "finance", 0.48),
+        ("Will the reference team win the demo series?", "sports", 0.55),
+        ("Will the demo protocol ship its upgrade on time?", "crypto", 0.34),
+        ("Will the placeholder policy pass this session?", "politics", 0.41),
+        ("Will the demo mission launch before the window closes?", "science", 0.71),
+    ]
+    for i, (question, category, price) in enumerate(demos):
+        event = MarketEvent(
+            source="demo",
+            source_id=f"demo-{i}",
+            question=question,
+            category=category,
+            active=True,
+            yes_price=price,
+            outcome=None,
+            volume_usd=float(50_000 + i * 25_000),
+            close_time=now + timedelta(days=30 + i * 10),
+            last_synced=now,
+        )
+        db.add(event)
+        db.flush()
+        # A deterministic 20-day reverse walk of ticks so the detail chart has
+        # a real series in the demo.
+        walk = price
+        for d in range(20, 0, -1):
+            walk = clamp(walk + rng.gauss(0, 0.03), 0.05, 0.95)
+            db.add(
+                PriceTick(
+                    event_id=event.id,
+                    yes_price=round(walk, 4),
+                    timestamp=now - timedelta(days=d),
+                )
+            )
+        db.add(PriceTick(event_id=event.id, yes_price=price, timestamp=now))
+    db.commit()
+    return True
 
 
 def _seed_demo_resolutions(db: Session) -> bool:
