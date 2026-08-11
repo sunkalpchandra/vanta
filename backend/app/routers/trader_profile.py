@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import MarketEvent, Trade, User
+from ..trader_stats import compute_stats
 from ..trading import portfolio, trader_leaderboard
 
 router = APIRouter(prefix="/api/traders", tags=["markets"])
@@ -89,5 +90,6 @@ def trader_profile(name: str, db: Session = Depends(get_db)):
         "n_trades": int(n_trades),
         "positions": book["positions"],
         "recent_trades": recent_trades,
+        "stats": compute_stats(db, user),
         "note": DISCLAIMER,
     }

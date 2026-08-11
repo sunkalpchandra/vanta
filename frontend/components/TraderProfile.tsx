@@ -1,3 +1,5 @@
+import { TraderStats } from "@/components/TraderStats";
+import type { TraderStats as TraderStatsData } from "@/lib/traderStats";
 import Link from "next/link";
 import { pct, shortDate } from "@/lib/format";
 import { fmtCredits, fmtSignedCredits } from "@/lib/trader";
@@ -17,6 +19,7 @@ export interface TraderProfileView {
   nTrades: number;
   positions: ProfilePosition[];
   recentTrades: TradeRecord[];
+  stats?: TraderStatsData | null;
   isStatic: boolean;
 }
 
@@ -71,6 +74,11 @@ export function TraderProfile({ view }: { view: TraderProfileView }) {
       ) : (
         <>
           <div className="micro-label mb-3">Positions</div>
+          {view.stats && (
+            <div className="mb-8">
+              <TraderStats stats={view.stats} />
+            </div>
+          )}
           {view.positions.length === 0 ? (
             <div className="card mb-8 p-8 text-center text-sm text-muted">No positions yet.</div>
           ) : (

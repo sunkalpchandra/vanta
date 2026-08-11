@@ -61,6 +61,7 @@ export default async function TraderProfilePage({
     nTrades: profile.n_trades,
     positions: profile.positions,
     recentTrades: profile.recent_trades,
+    stats: profile.stats ?? null,
     isStatic: false,
   };
   return <TraderProfile view={view} />;

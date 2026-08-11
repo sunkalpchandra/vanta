@@ -21,6 +21,8 @@ export interface ProfilePosition {
 
 /** The /api/traders/{name} response shape. The trader is addressed and shown by
  * their handle (email local-part) — the full email is never present. */
+import type { TraderStats } from "./traderStats";
+
 export interface TraderProfile {
   name: string;
   joined: string;
@@ -29,6 +31,7 @@ export interface TraderProfile {
   realized_pnl: number;
   n_trades: number;
   positions: ProfilePosition[];
+  stats?: TraderStats | null;
   recent_trades: TradeRecord[];
   note?: string;
 }
