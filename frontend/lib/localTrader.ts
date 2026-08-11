@@ -31,8 +31,14 @@ export function loadLocalTrader(storage: Storage | null = defaultStorage()): Loc
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return emptyTrader();
     const parsed = JSON.parse(raw) as LocalTrader;
-    if (typeof parsed.balance !== "number" || !Array.isArray(parsed.positions)) return emptyTrader();
-    return { balance: parsed.balance, positions: parsed.positions, trades: parsed.trades ?? [] };
+    if (
+      typeof parsed.balance !== "number" ||
+      !Number.isFinite(parsed.balance) ||
+      !Array.isArray(parsed.positions) ||
+      !Array.isArray(parsed.trades)
+    )
+      return emptyTrader();
+    return { balance: parsed.balance, positions: parsed.positions, trades: parsed.trades };
   } catch {
     return emptyTrader();
   }
@@ -65,10 +71,12 @@ export function placeLocalTrade(
   return result;
 }
 
-/** The browser book marked to the given current prices. */
+/** The browser book marked to the given current prices (and 1/0 settlement
+ * values once a market's outcome is known). */
 export function localPortfolioSnapshot(
   priceOf: (eventId: number) => number | null,
+  outcomeOf: (eventId: number) => number | null = () => null,
   storage: Storage | null = defaultStorage(),
 ) {
-  return localPortfolio(loadLocalTrader(storage), priceOf);
+  return localPortfolio(loadLocalTrader(storage), priceOf, outcomeOf);
 }
