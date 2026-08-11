@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm ci",
+  "comment": "Deploy the vanta frontend in LIVE mode (talks to the Render backend). Set NEXT_PUBLIC_API_URL to the API URL in the Vercel project's Environment Variables — do NOT set NEXT_PUBLIC_STATIC_MODE (that is the offline GitHub Pages build). See ../docs/DEPLOY-LIVE.md."
+}
