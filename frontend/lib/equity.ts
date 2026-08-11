@@ -38,5 +38,11 @@ export function buildEquitySeries(points: EquityPoint[] | null | undefined): Equ
     if (t === null || typeof cash !== "number" || !Number.isFinite(cash)) continue;
     rows.push({ t, cash: round2(cash) });
   }
-  return rows.sort((a, b) => a.t.localeCompare(b.t));
+  // Sort by real instant, not string order: ISO timestamps with differing
+  // fractional-second precision (…:05Z vs …:05.5Z) mis-order under localeCompare.
+  // A stable sort keeps same-instant fills in input order.
+  return rows
+    .map((r, i) => ({ r, i, ms: Date.parse(r.t) }))
+    .sort((a, b) => (a.ms - b.ms) || (a.i - b.i))
+    .map((x) => x.r);
 }
