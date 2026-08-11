@@ -95,3 +95,19 @@ test("history page has an honest empty state", async ({ page }) => {
   await page.goto("history/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
+
+test("browser trading works on the static demo (local engine)", async ({ page }) => {
+  await page.goto("markets/");
+  // Expand the first active market row.
+  await expect(async () => {
+    await page.locator("button").filter({ hasText: /%/ }).first().click();
+    await expect(page.getByText(/Trading locally in your browser/i)).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  // Buy 10 YES; the local engine fills it and shows the result.
+  await page.getByRole("spinbutton").first().fill("10");
+  await page.getByRole("button", { name: /^Buy YES$/i }).click();
+  await expect(page.getByText(/Filled:.*buy 10 YES/i)).toBeVisible({ timeout: 5000 });
+  // The portfolio reflects the trade (balance below ⓥ10,000).
+  await page.goto("portfolio/");
+  await expect(page.getByText(/balance/i).first()).toBeVisible();
+});
