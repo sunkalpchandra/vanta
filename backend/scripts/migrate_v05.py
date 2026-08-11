@@ -1,4 +1,4 @@
-"""Idempotent migration for v0.5 tables (price_ticks, agent_traders, market_watches).
+"""Idempotent migration for v0.5 tables (price_ticks, agent_traders, market_watches, market_comments).
 
 create_all() adds the new tables; there are no column alters this round.
 
@@ -25,7 +25,7 @@ def main() -> int:
     from app.db import Base, engine
 
     Base.metadata.create_all(engine)
-    print("migration complete: price_ticks, agent_traders, market_watches ensured")
+    print("migration complete: price_ticks, agent_traders, market_watches, market_comments ensured")
     return 0
 
 

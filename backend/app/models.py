@@ -291,3 +291,17 @@ class MarketWatch(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MarketComment(Base):
+    """A play-money trader's public comment on a market — light social layer.
+    Trader handle is the email local-part (never the full email)."""
+
+    __tablename__ = "market_comments"
+    __table_args__ = (Index("ix_market_comments_event_ts", "event_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("market_events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
