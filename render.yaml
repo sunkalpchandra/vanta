@@ -39,23 +39,11 @@ services:
       # anyone can register and trade play money.
       - key: REQUIRE_API_KEY
         value: "false"
-      - key: PYTHONUNBUFFERED
-        value: "1"
-
-  # Keeps the live market list fresh: adds new markets, refreshes prices,
-  # records price-history ticks, and settles resolved markets every 30 min.
-  - type: cron
-    name: vanta-sync
-    runtime: docker
-    plan: free
-    schedule: "*/30 * * * *"
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    dockerCommand: python scripts/sync_markets.py --polymarket-pages 20 --kalshi-pages 2 --manifold-pages 2
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: vanta-db
-          property: connectionString
+      # In-process market sync every 30 min: adds new markets, refreshes
+      # prices, records price-history ticks, and settles resolved markets — all
+      # on this one free web service (Render's Cron Jobs are a paid feature, so
+      # the app runs its own loop instead). Set to 0 to disable.
+      - key: SYNC_INTERVAL_MINUTES
+        value: "30"
       - key: PYTHONUNBUFFERED
         value: "1"
