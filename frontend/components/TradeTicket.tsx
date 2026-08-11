@@ -42,18 +42,10 @@ export function TradeTicket({
   const [email, setEmail] = useState("");
 
   useEffect(() => {
-    if (!IS_STATIC) setHasKey(getTraderKey() !== null);
+    // In the static demo the browser IS the account (localStorage engine), so
+    // no registration key is needed; live mode reads the stored trading key.
+    setHasKey(IS_STATIC || getTraderKey() !== null);
   }, []);
-
-  if (IS_STATIC) {
-    return (
-      <div className="text-sm text-muted">
-        Trading is disabled in the static demo — run the backend to trade this market with
-        ⓥ10,000 play credits.
-        <div className="micro-label mt-2">play money · paper trading · real market prices</div>
-      </div>
-    );
-  }
 
   const yesPrice = sidePrice(market.yes_price, "yes");
   if (yesPrice === null) {
@@ -98,6 +90,33 @@ export function TradeTicket({
     setError(null);
     setStaleNotice(null);
     setResult(null);
+    // Static demo: execute against the in-browser engine (localStorage), no
+    // backend. Same money math as the server (parity-tested).
+    if (IS_STATIC) {
+      try {
+        const { placeLocalTrade } = await import("@/lib/localTrader");
+        const { trader, trade } = placeLocalTrade(
+          { id: market.id, question: market.question, yes_price: market.yes_price, outcome: market.outcome ?? null, close_time: market.close_time },
+          side,
+          action,
+          qty,
+        );
+        const pos = trader.positions.find((p) => p.event_id === market.id && p.side === side);
+        setResult({
+          balance: trader.balance,
+          trade: { ...trade, question: market.question },
+          position: pos
+            ? { event_id: pos.event_id, side: pos.side, shares: pos.shares, avg_price: pos.avg_price, realized_pnl: pos.realized_pnl, settled: pos.settled }
+            : { event_id: market.id, side, shares: 0, avg_price: 0, realized_pnl: 0, settled: false },
+        });
+        setShares("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Trade rejected.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/api/markets/${market.id}/trade`, {
         method: "POST",
@@ -140,6 +159,12 @@ export function TradeTicket({
 
   return (
     <div>
+      {IS_STATIC && (
+        <p className="micro-label mb-3 rounded-lg border border-line bg-surface-2 px-3 py-2 text-ink-2">
+          ⓥ Trading locally in your browser — nothing is sent anywhere. Your book persists on this
+          device; clear site data to reset to ⓥ10,000.
+        </p>
+      )}
       {!hasKey ? (
         <form onSubmit={register} className="flex flex-wrap items-center gap-2">
           <input
