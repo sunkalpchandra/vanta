@@ -168,9 +168,14 @@ async def timing_and_cache_headers(request: Request, call_next):
 # Registered last so CORS is the OUTERMOST middleware: rate-limit 429s and
 # error-shield 500s must still carry CORS headers or the browser shows an
 # opaque network error instead of the status and Retry-After/request_id.
+# FRONTEND_ORIGIN may be a comma-separated list — a Vercel deployment has a
+# stable production URL plus rotating preview URLs, and a regex covers those.
+_origins = [o.strip() for o in get_settings().frontend_origin.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[get_settings().frontend_origin],
+    allow_origins=_origins,
+    # Any *.vercel.app preview build of the frontend can call the API too.
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
