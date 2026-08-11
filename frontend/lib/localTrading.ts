@@ -60,8 +60,20 @@ export function credit(amount: number): number {
   return Math.floor(amount * 100 + 1e-9) / 100;
 }
 
+/** Round half-to-even at 2 decimals — matches Python's round() (banker's),
+ * which the backend _round_money uses. Plain Math.round is half-UP and would
+ * diverge by a cent on exact half-cent values (e.g. 0.125 -> 0.12, not 0.13). */
 function round2(amount: number): number {
-  return Math.round(amount * 100) / 100 + 0;
+  const scaled = amount * 100;
+  const floor = Math.floor(scaled);
+  const diff = scaled - floor;
+  let cents: number;
+  if (Math.abs(diff - 0.5) < 1e-9) {
+    cents = floor % 2 === 0 ? floor : floor + 1; // tie -> even
+  } else {
+    cents = Math.round(scaled);
+  }
+  return cents / 100 + 0;
 }
 
 /** Execution price per share: YES at the venue price, NO at its complement. */
@@ -176,6 +188,7 @@ export function executeLocalTrade(
 export function localPortfolio(
   trader: LocalTrader,
   priceOf: (eventId: number) => number | null,
+  outcomeOf: (eventId: number) => number | null = () => null,
 ): {
   balance: number;
   equity: number;
@@ -188,8 +201,17 @@ export function localPortfolio(
   let unrealizedTotal = 0;
   const positions = trader.positions.map((p) => {
     realizedTotal += p.realized_pnl;
-    const yes = priceOf(p.event_id);
-    const current = yes === null ? null : execPrice(yes, p.side);
+    // Once a market has resolved, a position is worth its settlement value
+    // (ⓥ1 if this side won, ⓥ0 if it lost) — not the last stale venue price.
+    // Mirrors the backend _mark_price.
+    const outcome = outcomeOf(p.event_id);
+    let current: number | null;
+    if (outcome === 0 || outcome === 1) {
+      current = (p.side === "yes") === (outcome === 1) ? 1 : 0;
+    } else {
+      const yes = priceOf(p.event_id);
+      current = yes === null ? null : execPrice(yes, p.side);
+    }
     let unrealized = 0;
     if (current !== null && p.shares > 0) {
       marketValue += p.shares * current;

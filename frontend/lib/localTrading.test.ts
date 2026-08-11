@@ -102,3 +102,35 @@ describe("localPortfolio", () => {
     expect(execPrice(0.3, "no")).toBeCloseTo(0.7, 6);
   });
 });
+
+describe("round2 banker's rounding (backend _round_money parity)", () => {
+  it("rounds exact half-cents to even, not up", () => {
+    // 1 share bought at 0.625, sold at 0.75 → realized 0.125 → 0.12 (not 0.13)
+    let t = executeLocalTrade(emptyTrader(), market({ yes_price: 0.625 }), "yes", "buy", 1).trader;
+    t = executeLocalTrade(t, market({ yes_price: 0.75 }), "yes", "sell", 1).trader;
+    expect(t.positions[0].realized_pnl).toBe(0.12);
+  });
+});
+
+describe("localPortfolio marks resolved positions to their settlement value", () => {
+  it("a winning YES on a resolved market is worth ⓥ1/share, not the stale price", () => {
+    const t = executeLocalTrade(emptyTrader(), market({ yes_price: 0.4 }), "yes", "buy", 100).trader;
+    // Market resolved YES; stale price still 0.4 but outcome=1 → mark at 1.0.
+    const p = localPortfolio(
+      t,
+      () => 0.4,
+      () => 1,
+    );
+    expect(p.positions[0].current_price).toBe(1);
+    expect(p.equity).toBe(9960 + 100 * 1); // 10060
+  });
+  it("a losing NO on a YES-resolved market marks to 0", () => {
+    const t = executeLocalTrade(emptyTrader(), market({ yes_price: 0.4 }), "no", "buy", 10).trader;
+    const p = localPortfolio(
+      t,
+      () => 0.4,
+      () => 1,
+    );
+    expect(p.positions[0].current_price).toBe(0);
+  });
+});
