@@ -45,19 +45,58 @@ export function PortfolioView() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!IS_STATIC) load();
-  }, [load]);
+  const loadLocal = useCallback(async () => {
+    // Static demo: reconstruct the portfolio from the in-browser engine, marked
+    // to the baked market prices (fetched client-side). Fully offline.
+    try {
+      const [{ localPortfolioSnapshot, loadLocalTrader }, cfg] = await Promise.all([
+        import("@/lib/localTrader"),
+        import("@/lib/config"),
+      ]);
+      const res = await fetch(`${cfg.BASE_PATH}/data/markets-sample.json`);
+      const sample = res.ok ? await res.json() : { active: [], settled: [] };
+      const priceById = new Map<number, number>();
+      for (const m of [...(sample.active ?? []), ...(sample.settled ?? [])])
+        if (m.yes_price != null) priceById.set(m.id, m.yes_price);
+      const snap = localPortfolioSnapshot((id) => priceById.get(id) ?? null);
+      const trades = loadLocalTrader().trades.slice(-25).reverse();
+      setData({
+        balance: snap.balance,
+        equity: snap.equity,
+        realized_pnl_total: snap.realized_pnl_total,
+        positions: snap.positions.map((p) => ({
+          event_id: p.event_id,
+          question: p.question,
+          side: p.side,
+          shares: p.shares,
+          avg_price: p.avg_price,
+          realized_pnl: p.realized_pnl,
+          settled: p.settled,
+          current_price: p.current_price,
+          unrealized_pnl: p.unrealized_pnl,
+        })),
+        recent_trades: trades.map((t) => ({
+          id: t.id,
+          event_id: t.event_id,
+          question: t.question,
+          side: t.side,
+          action: t.action,
+          shares: t.shares,
+          price: t.price,
+          cost: t.cost,
+          created_at: t.created_at,
+        })),
+      } as PortfolioOut);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
 
-  if (IS_STATIC) {
-    return (
-      <div className="card p-8 text-center text-sm text-muted">
-        The static demo has no trading backend, so there is no portfolio to show. Run the backend
-        locally to trade with ⓥ10,000 play credits.
-        <div className="micro-label mt-3">play money · paper trading · real market prices</div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (IS_STATIC) loadLocal();
+    else load();
+  }, [load, loadLocal]);
 
   if (state === "loading") {
     return <div className="card p-8 text-center text-sm text-muted">Loading portfolio…</div>;
