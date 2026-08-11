@@ -4,7 +4,13 @@
 [![deploy-pages](https://github.com/sunkalpchandra/vanta/actions/workflows/pages.yml/badge.svg)](https://github.com/sunkalpchandra/vanta/actions/workflows/pages.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Live demo:** [sunkalpchandra.github.io/vanta](https://sunkalpchandra.github.io/vanta/) — a static snapshot of the full system (feed, agent debates, calibration, morning brief). Asking new questions needs the live backend below.
+**Live demo:** [sunkalpchandra.github.io/vanta](https://sunkalpchandra.github.io/vanta/) — a static snapshot of the full system (feed, agent debates, calibration, morning brief, markets). Trading and asking new questions need a live backend.
+
+**Run it live — real backend, real play-money trading** (register, trade real markets at synced prices, share a leaderboard):
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sunkalpchandra/vanta)
+
+One click provisions Postgres + the FastAPI server + a market-sync cron; put the frontend on Vercel pointed at it. Step-by-step: [docs/DEPLOY-LIVE.md](docs/DEPLOY-LIVE.md). Play money only — ⓥ credits are virtual.
 
 > *"What does the world currently believe will happen, and what does our intelligence system think is actually going to happen?"*
 
