@@ -203,13 +203,15 @@ def main() -> int:
         help="run the settlement sweep (needs app.trading)",
     )
     parser.add_argument("--loop", type=float, default=None, metavar="MINUTES", help="repeat forever, sleeping between")
-    parser.add_argument("--db", default=str(BACKEND_DIR / "vanta.db"), help="SQLite database path")
+    parser.add_argument("--db", default=None, help="SQLite path; ignored when DATABASE_URL is already set")
     args = parser.parse_args()
 
-    # Bind the target DB before any app import — app/db.py creates its
-    # engine at first import (same bootstrap as the other ingest scripts).
-    db_path = Path(args.db).resolve()
-    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+    # Bind the target DB before any app import — app/db.py creates its engine at
+    # first import. A pre-set DATABASE_URL (e.g. Render's managed Postgres) wins;
+    # otherwise fall back to the local SQLite file (--db or backend/vanta.db).
+    if not os.environ.get("DATABASE_URL"):
+        db_path = Path(args.db or (BACKEND_DIR / "vanta.db")).resolve()
+        os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     sys.path.insert(0, str(BACKEND_DIR))
 
     from app.config import get_settings
