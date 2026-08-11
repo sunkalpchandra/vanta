@@ -30,6 +30,7 @@ from .routers import (
     market_stats,
     market_watch,
     markets,
+    portfolio_history,
     questions,
     search,
     stats,
@@ -192,6 +193,7 @@ app.include_router(market_history.router)
 app.include_router(market_forecast.router)
 app.include_router(market_stats.router)
 app.include_router(market_watch.router)
+app.include_router(portfolio_history.router)
 app.include_router(trader_profile.router)
 app.include_router(export_data.router)
 app.include_router(activity.router)
