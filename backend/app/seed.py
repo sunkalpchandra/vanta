@@ -93,11 +93,15 @@ def _seed_demo_markets(db: Session) -> bool:
     # /traders/{name} pages exist in the static export (which bakes from a fresh
     # seed). Without this the dynamic route has zero params and output:export
     # fails the build. Clearly a demo account.
+    import secrets
+
     from .models import User
     from .trading import execute_trade
 
     if db.scalar(select(User).where(User.email == "demo-trader@demo.vanta")) is None:
-        bot = User(email="demo-trader@demo.vanta", api_key="vk_demo_trader_readonly")
+        # Random key: a hardcoded one would be a usable trading identity anyone
+        # could drive on a live deploy. Nobody needs to log in AS the demo bot.
+        bot = User(email="demo-trader@demo.vanta", api_key=f"vk_{secrets.token_urlsafe(24)}")
         db.add(bot)
         db.commit()
         demo_events = db.scalars(select(MarketEvent).where(MarketEvent.source == "demo")).all()
