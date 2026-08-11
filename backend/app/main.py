@@ -64,7 +64,14 @@ async def lifespan(app: FastAPI):
     if not os.environ.get("VANTA_NO_SEED"):
         with SessionLocal() as db:
             seed_if_empty(db)
-    yield
+    from .background_sync import start_background_sync
+
+    sync_task = start_background_sync()
+    try:
+        yield
+    finally:
+        if sync_task is not None:
+            sync_task.cancel()
 
 
 app = FastAPI(
