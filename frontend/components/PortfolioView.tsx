@@ -24,6 +24,7 @@ type ViewState = "loading" | "nokey" | "rejected" | "error" | "ready";
 export function PortfolioView() {
   const [state, setState] = useState<ViewState>("loading");
   const [data, setData] = useState<PortfolioOut | null>(null);
+  const [localEquity, setLocalEquity] = useState<{ timestamp: string; cash: number }[]>([]);
 
   const load = useCallback(async () => {
     if (getTraderKey() === null) {
@@ -56,10 +57,28 @@ export function PortfolioView() {
       const res = await fetch(`${cfg.BASE_PATH}/data/markets-sample.json`);
       const sample = res.ok ? await res.json() : { active: [], settled: [] };
       const priceById = new Map<number, number>();
-      for (const m of [...(sample.active ?? []), ...(sample.settled ?? [])])
+      const outcomeById = new Map<number, number>();
+      for (const m of [...(sample.active ?? []), ...(sample.settled ?? [])]) {
         if (m.yes_price != null) priceById.set(m.id, m.yes_price);
-      const snap = localPortfolioSnapshot((id) => priceById.get(id) ?? null);
-      const trades = loadLocalTrader().trades.slice(-25).reverse();
+        if (m.outcome != null) outcomeById.set(m.id, m.outcome);
+      }
+      const snap = localPortfolioSnapshot(
+        (id) => priceById.get(id) ?? null,
+        (id) => outcomeById.get(id) ?? null,
+      );
+      const allTrades = loadLocalTrader().trades;
+      // Cash-flow-from-trades series (matches the backend equity endpoint):
+      // start at ⓥ10,000, apply each signed trade cost.
+      let cash = 10000;
+      const eqPoints = allTrades.length
+        ? [{ timestamp: allTrades[0].created_at, cash: 10000 }]
+        : [];
+      for (const t of allTrades) {
+        cash = Math.round((cash + t.cost) * 100) / 100;
+        eqPoints.push({ timestamp: t.created_at, cash });
+      }
+      setLocalEquity(eqPoints);
+      const trades = allTrades.slice(-25).reverse();
       setData({
         balance: snap.balance,
         equity: snap.equity,
@@ -247,7 +266,7 @@ export function PortfolioView() {
       </div>
       <section className="mt-8">
         <div className="micro-label mb-3">Cash flow from trades</div>
-        <EquityChart />
+        <EquityChart points={IS_STATIC ? localEquity : undefined} />
       </section>
       <p className="micro-label mt-6">play money · paper trading · real market prices</p>
     </div>
