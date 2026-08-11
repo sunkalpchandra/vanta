@@ -88,6 +88,24 @@ def _seed_demo_markets(db: Session) -> bool:
             )
         db.add(PriceTick(event_id=event.id, yes_price=price, timestamp=now))
     db.commit()
+
+    # A demo trader with a couple of trades, so the trader leaderboard and the
+    # /traders/{name} pages exist in the static export (which bakes from a fresh
+    # seed). Without this the dynamic route has zero params and output:export
+    # fails the build. Clearly a demo account.
+    from .models import User
+    from .trading import execute_trade
+
+    if db.scalar(select(User).where(User.email == "demo-trader@demo.vanta")) is None:
+        bot = User(email="demo-trader@demo.vanta", api_key="vk_demo_trader_readonly")
+        db.add(bot)
+        db.commit()
+        demo_events = db.scalars(select(MarketEvent).where(MarketEvent.source == "demo")).all()
+        for event in demo_events[:3]:
+            try:
+                execute_trade(db, bot, event, "yes", "buy", 25)
+            except Exception:  # never let a demo trade block startup
+                continue
     return True
 
 
