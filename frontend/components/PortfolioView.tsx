@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { EquityChart } from "@/components/EquityChart";
 import { API_URL } from "@/lib/api";
 import { IS_STATIC } from "@/lib/config";
 import { shortDate } from "@/lib/format";
@@ -205,6 +206,10 @@ export function PortfolioView() {
           </ul>
         )}
       </div>
+      <section className="mt-8">
+        <div className="micro-label mb-3">Cash flow from trades</div>
+        <EquityChart />
+      </section>
       <p className="micro-label mt-6">play money · paper trading · real market prices</p>
     </div>
   );
